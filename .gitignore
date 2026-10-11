@@ -13,6 +13,7 @@
 /.phpunit.result.cache
 .phpunit.cache/
 .vscode/
+/docs
 .idea/
 .agents/
 .claude/
