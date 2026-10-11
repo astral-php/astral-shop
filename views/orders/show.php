@@ -1,0 +1,166 @@
+<?php
+/** @var \App\Models\Order $order */
+/** @var list<\App\Models\OrderItem> $items */
+/** @var array<string, mixed> $shop */
+/** @var array<string, mixed>|null $shipment */
+/** @var bool $confirming */
+$symbol = (string) ($shop['currency_symbol'] ?? '€');
+$confirming = !empty($confirming);
+$shipment = is_array($shipment ?? null) ? $shipment : null;
+?>
+<section class="admin-panel">
+    <div class="admin-panel__head">
+        <h1>Commande #<?= (int) $order->id ?></h1>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+            <?php if ($order->isPaid()): ?>
+                <a class="btn btn-primary" href="/orders/<?= (int) $order->id ?>/invoice">Télécharger la facture</a>
+            <?php endif ?>
+            <a class="btn btn-ghost" href="/orders">← Mes commandes</a>
+        </div>
+    </div>
+
+    <?php if ($confirming && $order->isPending()): ?>
+        <p id="order-confirming" class="flash-ok" style="margin-bottom:1rem">
+            Paiement accepté — confirmation automatique en cours…
+        </p>
+    <?php endif ?>
+
+    <p>
+        <strong>Date :</strong>
+        <?= htmlspecialchars($order->created_at, ENT_QUOTES, 'UTF-8') ?><br>
+        <strong>Paiement :</strong>
+        <span id="order-payment-badge" class="<?= htmlspecialchars($order->paymentStateBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
+            <?= htmlspecialchars($order->paymentStateLabel(), ENT_QUOTES, 'UTF-8') ?>
+        </span>
+        <span class="badge-muted"><?= htmlspecialchars($order->paymentMethodLabel(), ENT_QUOTES, 'UTF-8') ?></span>
+        <?php if ($order->paymentReference() !== null): ?>
+            <span class="badge-muted">Réf. <?= htmlspecialchars($order->paymentReference(), ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endif ?>
+        <br>
+        <strong>Statut :</strong>
+        <span id="order-status-badge" class="<?= htmlspecialchars($order->fulfillmentBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
+            <?= htmlspecialchars($order->fulfillmentLabel(), ENT_QUOTES, 'UTF-8') ?>
+        </span><br>
+        <strong>Sous-total TTC :</strong> <?= htmlspecialchars($order->subtotalLabel($symbol), ENT_QUOTES, 'UTF-8') ?><br>
+        <strong>Livraison :</strong> <?= htmlspecialchars($order->shippingLabel($symbol), ENT_QUOTES, 'UTF-8') ?>
+        <?php if ($shipment !== null): ?>
+            <span class="badge-muted"><?= htmlspecialchars((string) ($shipment['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endif ?>
+        <br>
+        <strong>Total TTC :</strong> <?= htmlspecialchars($order->totalLabel($symbol), ENT_QUOTES, 'UTF-8') ?>
+    </p>
+
+    <?php if ($order->isPaid()): ?>
+        <p style="margin:0 0 1rem;padding:0.75rem 1rem;background:#eef2ff;border-radius:8px;font-size:0.9rem">
+            Votre facture PDF est disponible —
+            <a href="/orders/<?= (int) $order->id ?>/invoice">télécharger</a>.
+        </p>
+    <?php endif ?>
+
+    <h2 class="section-title">Livraison</h2>
+    <p style="color:var(--muted);line-height:1.5">
+        <?php if ($shipment !== null): ?>
+            <strong style="color:var(--text)"><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
+        <?php endif ?>
+        <?= htmlspecialchars($order->shipping_name, ENT_QUOTES, 'UTF-8') ?><br>
+        <?= htmlspecialchars($order->shipping_line1, ENT_QUOTES, 'UTF-8') ?><br>
+        <?= htmlspecialchars($order->shipping_postal . ' ' . $order->shipping_city, ENT_QUOTES, 'UTF-8') ?><br>
+        <?= htmlspecialchars($order->shipping_country, ENT_QUOTES, 'UTF-8') ?>
+    </p>
+
+    <h2 class="section-title">Articles</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Prix TTC</th>
+                    <th>Qté</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($items as $item): ?>
+                <tr>
+                    <td><?= htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars($item->unitLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
+                    <td><?= (int) $item->quantity ?></td>
+                    <td><?= htmlspecialchars($item->lineLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
+                </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php if ($order->isOpen()): ?>
+        <div id="order-pay-cta" style="margin-top:1.25rem<?= $confirming && $order->isPending() ? ';display:none' : '' ?>">
+            <?php if ($order->payment_method === \App\Models\Order::PAYMENT_CARD): ?>
+                <p style="color:var(--muted);font-size:0.9rem;margin:0 0 0.75rem">
+                    Finalisez le paiement dans la boutique, ou changez de moyen.
+                </p>
+                <div style="display:flex;flex-wrap:wrap;gap:0.65rem">
+                    <a class="btn btn-primary" href="/payment/checkout?order_id=<?= (int) $order->id ?>">
+                        Continuer le paiement carte
+                    </a>
+                    <a class="btn btn-ghost" href="/checkout/change-payment/<?= (int) $order->id ?>">
+                        Changer de moyen
+                    </a>
+                </div>
+            <?php else: ?>
+                <a class="btn btn-primary" href="/checkout/instructions/<?= (int) $order->id ?>">
+                    Voir les instructions de paiement
+                </a>
+            <?php endif ?>
+        </div>
+    <?php endif ?>
+</section>
+
+<?php if ($confirming && $order->isPending()): ?>
+<script>
+(function () {
+    var orderId = <?= (int) $order->id ?>;
+    var tries = 0;
+    var maxTries = 20;
+    var badge = document.getElementById('order-status-badge');
+    var banner = document.getElementById('order-confirming');
+
+    function poll() {
+        tries += 1;
+        fetch('/orders/' + orderId + '/status', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.paid) {
+                    var payBadge = document.getElementById('order-payment-badge');
+                    if (payBadge) {
+                        payBadge.className = data.payment_badge || 'status-badge status-badge--paid';
+                        payBadge.textContent = data.payment_label || 'Payée';
+                    }
+                    if (badge) {
+                        badge.className = data.fulfillment_badge || 'status-badge status-badge--awaiting';
+                        badge.textContent = data.fulfillment_label || 'En attente';
+                    }
+                    if (banner) {
+                        banner.textContent = 'Paiement confirmé. Merci pour votre commande !';
+                    }
+                    window.setTimeout(function () {
+                        window.location.href = '/orders/' + orderId;
+                    }, 600);
+                    return;
+                }
+                if (tries < maxTries) {
+                    window.setTimeout(poll, 1000);
+                } else if (banner) {
+                    banner.textContent = 'Confirmation un peu longue — rechargez la page dans un instant.';
+                }
+            })
+            .catch(function () {
+                if (tries < maxTries) {
+                    window.setTimeout(poll, 1500);
+                }
+            });
+    }
+
+    window.setTimeout(poll, 500);
+})();
+</script>
+<?php endif ?>

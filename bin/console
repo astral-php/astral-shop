@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+define('BASE_PATH', dirname(__DIR__));
+
+require BASE_PATH . '/vendor/autoload.php';
+
+if (file_exists(BASE_PATH . '/.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(BASE_PATH);
+    $dotenv->safeLoad();
+}
+
+use Core\Console\Console;
+use Core\Console\Commands\ClearCacheCommand;
+use Core\Console\Commands\MakeControllerCommand;
+use Core\Console\Commands\MakeDaoCommand;
+use Core\Console\Commands\MakeMigrationCommand;
+use Core\Console\Commands\MakeModelCommand;
+use Core\Console\Commands\MakeModuleCommand;
+use Core\Console\Commands\MigrateCommand;
+use Core\Console\Commands\MigrateRollbackCommand;
+use Core\Console\Commands\MigrateStatusCommand;
+use Database\Connection;
+use Database\Migration\Migrator;
+
+$console = new Console(appName: 'Astral Starter Console');
+
+$console->register(new ClearCacheCommand(BASE_PATH . '/storage/cache'));
+
+$makeMigration = new MakeMigrationCommand(BASE_PATH . '/database/migrations');
+$console->register(new MakeModelCommand(BASE_PATH . '/app/Models'));
+$console->register(new MakeDaoCommand(BASE_PATH . '/app/Dao', BASE_PATH . '/app/Models'));
+$console->register(new MakeControllerCommand(BASE_PATH . '/app/Controllers', BASE_PATH . '/app/Dao'));
+$console->register($makeMigration);
+$console->register(new MakeModuleCommand(BASE_PATH, $makeMigration));
+
+try {
+    $dbConfig = require BASE_PATH . '/config/database.php';
+    $pdo      = Connection::getInstance($dbConfig);
+    $migrator = new Migrator($pdo, BASE_PATH . '/database/migrations');
+
+    $console->register(new MigrateCommand($migrator));
+    $console->register(new MigrateRollbackCommand($migrator));
+    $console->register(new MigrateStatusCommand($migrator));
+} catch (\Throwable $e) {
+    fwrite(STDERR, "\033[33m⚠ Commandes de migration indisponibles : " . $e->getMessage() . "\033[0m\n");
+}
+
+exit($console->run($_SERVER['argv'] ?? []));
