@@ -24,8 +24,10 @@ use App\Dao\OrderDao;
 use App\Dao\OrderItemDao;
 use App\Dao\ProductDao;
 use App\Dao\UserDao;
+use App\Services\CancelledOrderPurgeService;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use App\Services\OrderStockService;
 use App\Events\OrderBecamePaid;
 use App\Events\OrderShipped;
 use App\Events\RoleChanged;
@@ -79,12 +81,24 @@ final class AppServiceProvider implements ServiceProviderInterface
         $dispatcher->listen(OrderBecamePaid::class, SendOrderConfirmationEmail::class);
         $dispatcher->listen(OrderShipped::class, SendOrderShippedEmail::class);
 
-        $container->bind(DecrementStockOnPaymentSucceeded::class, fn (Container $c) => new DecrementStockOnPaymentSucceeded(
+        $container->singleton(OrderStockService::class, fn (Container $c) => new OrderStockService(
             pdo:          $c->make(\PDO::class),
             orderDao:     $c->make(OrderDao::class),
             orderItemDao: $c->make(OrderItemDao::class),
             productDao:   $c->make(ProductDao::class),
             logger:       $c->make(Logger::class),
+        ));
+
+        $container->singleton(CancelledOrderPurgeService::class, fn (Container $c) => new CancelledOrderPurgeService(
+            pdo:          $c->make(\PDO::class),
+            orderDao:     $c->make(OrderDao::class),
+            orderItemDao: $c->make(OrderItemDao::class),
+            stock:        $c->make(OrderStockService::class),
+        ));
+
+        $container->bind(DecrementStockOnPaymentSucceeded::class, fn (Container $c) => new DecrementStockOnPaymentSucceeded(
+            stock:  $c->make(OrderStockService::class),
+            logger: $c->make(Logger::class),
         ));
 
         $container->singleton(InvoiceService::class, fn (Container $c) => new InvoiceService(
@@ -145,14 +159,19 @@ final class AppServiceProvider implements ServiceProviderInterface
         $container->singleton(OrderDao::class, fn (Container $c) => new OrderDao($c->make(\PDO::class)));
         $container->singleton(OrderItemDao::class, fn (Container $c) => new OrderItemDao($c->make(\PDO::class)));
 
+        $paymentConfig = is_array($shopConfig['payment'] ?? null) ? $shopConfig['payment'] : [];
+        $offlineDays = max(1, (int) ($paymentConfig['offline_payment_days'] ?? 7));
+
         $container->singleton(CheckoutService::class, fn (Container $c) => new CheckoutService(
-            pdo:             $c->make(\PDO::class),
-            cart:            $c->make(CartService::class),
-            productDao:      $c->make(ProductDao::class),
-            orderDao:        $c->make(OrderDao::class),
-            orderItemDao:    $c->make(OrderItemDao::class),
-            shippingService: $c->make(ShippingService::class),
-            shipmentDao:     $c->make(OrderShipmentDao::class),
+            pdo:                 $c->make(\PDO::class),
+            cart:                $c->make(CartService::class),
+            productDao:          $c->make(ProductDao::class),
+            orderDao:            $c->make(OrderDao::class),
+            orderItemDao:        $c->make(OrderItemDao::class),
+            shippingService:     $c->make(ShippingService::class),
+            shipmentDao:         $c->make(OrderShipmentDao::class),
+            stock:               $c->make(OrderStockService::class),
+            offlinePaymentDays:  $offlineDays,
         ));
 
         $container->singleton(Mailer::class, function () use ($appConfig): Mailer {
@@ -289,6 +308,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             orderDao:     $c->make(OrderDao::class),
             orderItemDao: $c->make(OrderItemDao::class),
             fulfillment:  $c->make(OrderFulfillmentService::class),
+            purge:        $c->make(CancelledOrderPurgeService::class),
             shop:         $shopConfig,
         ));
 

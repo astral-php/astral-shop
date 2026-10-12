@@ -12,6 +12,7 @@ use App\Models\Product;
 use AstralShipping\Dao\OrderShipmentDao;
 use AstralShipping\Models\ShippingSelection;
 use AstralShipping\Service\ShippingService;
+use DateTimeImmutable;
 use PDO;
 use Throwable;
 
@@ -25,6 +26,8 @@ final class CheckoutService
         private OrderItemDao $orderItemDao,
         private ShippingService $shippingService,
         private OrderShipmentDao $shipmentDao,
+        private OrderStockService $stock,
+        private int $offlinePaymentDays = 7,
     ) {}
 
     /**
@@ -55,6 +58,7 @@ final class CheckoutService
 
         $prepared = [];
         $subtotal = 0;
+        $isOffline = in_array($paymentMethod, [Order::PAYMENT_TRANSFER, Order::PAYMENT_CHECK], true);
 
         foreach ($lines as $line) {
             $product = $line['product'];
@@ -126,6 +130,14 @@ final class CheckoutService
 
             $this->shipmentDao->record($orderId, $selection);
 
+            if ($isOffline) {
+                $this->stock->applyReservation($orderId, false);
+                $dueAt = (new DateTimeImmutable('now'))
+                    ->modify('+' . max(1, $this->offlinePaymentDays) . ' days')
+                    ->format('Y-m-d H:i:s');
+                $this->orderDao->update($orderId, ['payment_due_at' => $dueAt]);
+            }
+
             $this->pdo->commit();
         } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -182,13 +194,19 @@ final class CheckoutService
             'shipping_country' => $order->shipping_country,
         ];
 
-        $this->orderDao->update($order->id, [
-            'status'           => Order::STATUS_CANCELLED,
-            'stripe_intent_id' => null,
-        ]);
+        $cancel = $this->stock->cancelAndRelease($order);
+        if ($cancel['ok'] !== true) {
+            return ['ok' => false, 'error' => $cancel['error']];
+        }
 
         $this->cart->replaceItems($items);
 
         return ['ok' => true, 'shipping' => $shipping];
+    }
+
+    /** Annule une commande ouverte (pending/failed) et libère le stock réservé. */
+    public function cancelOpenOrder(Order $order): void
+    {
+        $this->stock->cancelAndRelease($order);
     }
 }

@@ -8,6 +8,7 @@ use App\Dao\OrderDao;
 use App\Dao\OrderItemDao;
 use App\Dao\ProductDao;
 use App\Listeners\DecrementStockOnPaymentSucceeded;
+use App\Services\OrderStockService;
 use AstralPayment\Events\PaymentSucceeded;
 use Core\Logger;
 use PDO;
@@ -56,6 +57,7 @@ final class DecrementStockOnPaymentSucceededTest extends TestCase
                 shipping_city TEXT NOT NULL DEFAULT '',
                 shipping_country TEXT NOT NULL DEFAULT 'FR',
                 stock_applied INTEGER NOT NULL DEFAULT 0,
+                payment_due_at TEXT NULL,
                 created_at TEXT NOT NULL DEFAULT ''
             );
             CREATE TABLE order_items (
@@ -79,11 +81,15 @@ final class DecrementStockOnPaymentSucceededTest extends TestCase
         $logDir = sys_get_temp_dir() . '/astral-shop-test-logs';
         $this->productDao = new ProductDao($this->pdo);
         $this->orderDao = new OrderDao($this->pdo);
-        $this->listener = new DecrementStockOnPaymentSucceeded(
+        $stock = new OrderStockService(
             pdo: $this->pdo,
             orderDao: $this->orderDao,
             orderItemDao: new OrderItemDao($this->pdo),
             productDao: $this->productDao,
+            logger: new Logger($logDir),
+        );
+        $this->listener = new DecrementStockOnPaymentSucceeded(
+            stock: $stock,
             logger: new Logger($logDir),
         );
     }
@@ -105,5 +111,18 @@ final class DecrementStockOnPaymentSucceededTest extends TestCase
         $this->listener->handle($event);
         $product = $this->productDao->findById(10);
         $this->assertSame(6, (int) $product->stock);
+    }
+
+    public function testSkipsWhenAlreadyReservedOffline(): void
+    {
+        $this->pdo->exec('UPDATE orders SET stock_applied = 1 WHERE id = 1');
+        $this->pdo->exec('UPDATE products SET stock = 5 WHERE id = 10');
+
+        $event = new PaymentSucceeded(new stdClass(), 1);
+        $this->listener->handle($event);
+
+        $product = $this->productDao->findById(10);
+        $this->assertNotNull($product);
+        $this->assertSame(5, (int) $product->stock);
     }
 }

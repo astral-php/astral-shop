@@ -8,7 +8,7 @@ $filter_payment = (string) ($filter_payment ?? '');
 $filter_fulfillment = (string) ($filter_fulfillment ?? '');
 
 $paymentFilters = [
-    ''          => 'Tous',
+    ''          => 'Actives',
     'pending'   => 'À payer',
     'paid'      => 'Payées',
     'failed'    => 'Échouées',
@@ -99,6 +99,14 @@ $buildUrl = static function (string $payment, string $fulfillment): string {
                         </td>
                         <td class="actions">
                             <a class="btn btn-ghost" href="/admin/orders/<?= (int) $order->id ?>" style="padding:0.35rem 0.75rem;font-size:0.8rem">Détail</a>
+                            <?php if ($order->isCancelled()): ?>
+                                <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/delete"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Supprimer définitivement la commande #<?= (int) $order->id ?> ?');">
+                                    <?= $csrf->field() ?>
+                                    <button type="submit" class="link-danger" style="font-size:0.8rem">Supprimer</button>
+                                </form>
+                            <?php endif ?>
                         </td>
                     </tr>
                 <?php endforeach ?>

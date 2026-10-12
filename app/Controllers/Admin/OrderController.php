@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Dao\OrderDao;
 use App\Dao\OrderItemDao;
 use App\Models\Order;
+use App\Services\CancelledOrderPurgeService;
 use App\Services\OrderFulfillmentService;
 use Core\Exception\NotFoundException;
 use Core\Http\Response;
@@ -24,6 +25,7 @@ final class OrderController extends AdminController
         private OrderDao $orderDao,
         private OrderItemDao $orderItemDao,
         private OrderFulfillmentService $fulfillment,
+        private CancelledOrderPurgeService $purge,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -91,6 +93,24 @@ final class OrderController extends AdminController
     public function markShipped(string $id): Response
     {
         return $this->runTransition((int) $id, fn (int $oid) => $this->fulfillment->markShipped($oid), 'Commande marquée comme envoyée — e-mail client envoyé.');
+    }
+
+    public function destroy(string $id): Response
+    {
+        $order = $this->orderDao->findById((int) $id);
+        /** @var Order|null $order */
+        if ($order === null) {
+            throw new NotFoundException('Commande introuvable.');
+        }
+
+        $result = $this->purge->delete($order);
+        if ($result['ok'] !== true) {
+            $this->session->flash('error', $result['error']);
+            return $this->redirect('/admin/orders/' . $order->id);
+        }
+
+        $this->session->flash('success', 'Commande annulée #' . $order->id . ' supprimée.');
+        return $this->redirect('/admin/orders?payment=cancelled');
     }
 
     /**

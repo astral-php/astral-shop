@@ -24,6 +24,9 @@ $redirect = $redirect ?? '/boutique';
             <?php endif ?>
             <h3 class="product-card__title"><?= htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8') ?></h3>
             <p class="product-card__price"><?= htmlspecialchars($product->priceLabel($symbol), ENT_QUOTES, 'UTF-8') ?> <span class="ttc">TTC</span></p>
+            <span class="<?= htmlspecialchars($product->stockBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
+                <?= htmlspecialchars($product->stockLabel(), ENT_QUOTES, 'UTF-8') ?>
+            </span>
         </div>
     </a>
     <?php if (!$auth->check() || !$auth->is(\Core\Auth\Role::ADMIN)): ?>
@@ -37,7 +40,7 @@ $redirect = $redirect ?? '/boutique';
                 <button type="submit" class="btn btn-primary product-card__btn">Ajouter au panier</button>
             </form>
         <?php else: ?>
-            <span class="badge-muted">Rupture</span>
+            <button type="button" class="btn btn-ghost product-card__btn" disabled>Indisponible</button>
         <?php endif ?>
     </div>
     <?php endif ?>

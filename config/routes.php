@@ -111,6 +111,7 @@ return function (Router $router): void {
             $r->post('/orders/:id/mark-paid',     AdminOrderController::class, 'markPaid');
             $r->post('/orders/:id/mark-preparing', AdminOrderController::class, 'markPreparing');
             $r->post('/orders/:id/mark-shipped',  AdminOrderController::class, 'markShipped');
+            $r->post('/orders/:id/delete',        AdminOrderController::class, 'destroy');
 
             $r->get('/categories',              AdminCategoryController::class, 'index');
             $r->get('/categories/create',       AdminCategoryController::class, 'create');

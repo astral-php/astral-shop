@@ -4,29 +4,23 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Dao\OrderDao;
-use App\Dao\OrderItemDao;
-use App\Dao\ProductDao;
 use App\Events\OrderBecamePaid;
-use App\Models\Order;
+use App\Services\OrderStockService;
 use AstralPayment\Events\PaymentSucceeded;
 use Core\Events\EventInterface;
 use Core\Events\ListenerInterface;
 use Core\Logger;
-use PDO;
 use Throwable;
 
 /**
  * Décrémente le stock une seule fois lorsque le paiement est confirmé (CDC).
  * Stripe (PaymentSucceeded) ou validation admin offline (OrderBecamePaid).
+ * No-op si déjà réservé à l’engagement offline (stock_applied = 1).
  */
 final class DecrementStockOnPaymentSucceeded implements ListenerInterface
 {
     public function __construct(
-        private PDO $pdo,
-        private OrderDao $orderDao,
-        private OrderItemDao $orderItemDao,
-        private ProductDao $productDao,
+        private OrderStockService $stock,
         private Logger $logger,
     ) {}
 
@@ -38,44 +32,8 @@ final class DecrementStockOnPaymentSucceeded implements ListenerInterface
         }
 
         try {
-            $this->pdo->beginTransaction();
-
-            $order = $this->orderDao->findById($orderId);
-            /** @var Order|null $order */
-            if ($order === null) {
-                $this->pdo->rollBack();
-                return;
-            }
-
-            if ((int) ($order->stock_applied ?? 0) === 1) {
-                $this->pdo->rollBack();
-                return;
-            }
-
-            foreach ($this->orderItemDao->findByOrder($order->id) as $item) {
-                if ($item->product_id === null) {
-                    continue;
-                }
-
-                $product = $this->productDao->findById($item->product_id);
-                if ($product === null) {
-                    continue;
-                }
-
-                $newStock = max(0, (int) $product->stock - (int) $item->quantity);
-                $this->productDao->update($product->id, ['stock' => $newStock]);
-            }
-
-            $this->orderDao->update($order->id, ['stock_applied' => 1]);
-            $this->pdo->commit();
-
-            $this->logger->info('Stock décrémenté après paiement', [
-                'order_id' => $order->id,
-            ]);
+            $this->stock->applyReservation($orderId, true);
         } catch (Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
             $this->logger->error('Échec décrément stock après paiement', [
                 'order_id' => $orderId,
                 'message'  => $e->getMessage(),

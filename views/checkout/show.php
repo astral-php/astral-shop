@@ -11,6 +11,10 @@ $val = static fn (string $key): string => htmlspecialchars((string) ($old[$key] 
 ?>
 <section class="admin-panel" style="max-width:40rem">
     <h1>Checkout</h1>
+    <?php
+    $checkoutStep = 'identification';
+    require dirname(__DIR__) . '/partials/checkout-steps.php';
+    ?>
     <p class="admin-nav"><a href="/panier">← Panier</a></p>
 
     <div class="cart-summary" style="margin-bottom:1.25rem">

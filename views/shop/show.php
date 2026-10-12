@@ -33,11 +33,14 @@ $src    = $product->imageSrc();
             </div>
         <?php endif ?>
         <p class="product-detail__meta">
-            <?= $product->inStock()
-                ? 'En stock (' . (int) $product->stock . ')'
-                : 'Rupture de stock' ?>
+            <span class="<?= htmlspecialchars($product->stockBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
+                <?= htmlspecialchars($product->stockLabel(), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <?php if ($product->stockHint() !== null): ?>
+                <span class="product-detail__stock-hint"><?= htmlspecialchars($product->stockHint(), ENT_QUOTES, 'UTF-8') ?></span>
+            <?php endif ?>
             <?php if ($product->sku): ?>
-                · SKU <?= htmlspecialchars($product->sku, ENT_QUOTES, 'UTF-8') ?>
+                <span class="badge-muted">SKU <?= htmlspecialchars($product->sku, ENT_QUOTES, 'UTF-8') ?></span>
             <?php endif ?>
         </p>
 
@@ -56,7 +59,9 @@ $src    = $product->imageSrc();
                     <button type="submit" class="btn-block">Ajouter au panier</button>
                 </form>
             <?php else: ?>
-                <p class="flash-err" style="display:inline-block">Indisponible pour le moment.</p>
+                <p class="product-detail__stock-hint" style="margin-bottom:1rem">
+                    Produit indisponible pour le moment.
+                </p>
             <?php endif ?>
         <?php endif ?>
 

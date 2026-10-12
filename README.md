@@ -65,11 +65,19 @@ AUTH_REGISTRATION=confirm
 SHOP_PRIMARY=#4f46e5
 SHOP_FLAT_RATE_CENTS=590
 SHOP_FREE_SHIPPING_CENTS=6000
+SHOP_OFFLINE_PAYMENT_DAYS=7
 MAIL_HOST=127.0.0.1
 MAIL_PORT=1025
 ```
 
 Voir `.env.example` pour Stripe, virement et chèque.
+
+Chèque / virement : le stock est réservé à l’engagement jusqu’à `payment_due_at`.  
+Expiration + restock (cron / Task Scheduler, ex. 1×/heure) :
+
+```bash
+php bin/console orders:expire-offline
+```
 
 ## Roadmap courte
 

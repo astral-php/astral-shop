@@ -36,6 +36,43 @@ final class Product
         return $this->stock > 0;
     }
 
+    /**
+     * Libellé court pour badge catalogue / fiche.
+     * Ex. « 6 disponibles », « 1 disponible », « Non disponible ».
+     */
+    public function stockLabel(): string
+    {
+        $stock = (int) $this->stock;
+
+        if ($stock < 1) {
+            return 'Non disponible';
+        }
+
+        if ($stock === 1) {
+            return '1 disponible';
+        }
+
+        return $stock . ' disponibles';
+    }
+
+    /** Texte complémentaire (fiche produit) quand épuisé. */
+    public function stockHint(): ?string
+    {
+        return $this->inStock() ? null : 'En attente de renouvellement';
+    }
+
+    /** Classe CSS badge disponibilité. */
+    public function stockBadgeClass(): string
+    {
+        $stock = (int) $this->stock;
+
+        return match (true) {
+            $stock < 1   => 'stock-badge stock-badge--out',
+            $stock === 1 => 'stock-badge stock-badge--low',
+            default      => 'stock-badge stock-badge--ok',
+        };
+    }
+
     public function isPersisted(): bool
     {
         return $this->id > 0;

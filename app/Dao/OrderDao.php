@@ -83,6 +83,9 @@ final class OrderDao extends AbstractDao
         if ($paymentStatus !== null && $paymentStatus !== '') {
             $where[] = 'o.status = :payment_status';
             $params[':payment_status'] = $paymentStatus;
+        } else {
+            // Liste admin par défaut : masquer les annulées (changement de moyen, abandons).
+            $where[] = "o.status != 'cancelled'";
         }
 
         if ($fulfillmentStatus !== null && $fulfillmentStatus !== '') {
@@ -113,5 +116,24 @@ final class OrderDao extends AbstractDao
 
         /** @var Order|null */
         return $rows[0] ?? null;
+    }
+
+    /**
+     * Pending offline dont l’échéance de paiement est dépassée.
+     *
+     * @return list<Order>
+     */
+    public function findExpiredOfflinePending(string $now): array
+    {
+        /** @var list<Order> */
+        return $this->query(
+            "SELECT * FROM {$this->getTable()}
+             WHERE status = 'pending'
+               AND payment_method IN ('transfer', 'check')
+               AND payment_due_at IS NOT NULL
+               AND payment_due_at < :now
+             ORDER BY payment_due_at ASC, id ASC",
+            [':now' => $now],
+        );
     }
 }

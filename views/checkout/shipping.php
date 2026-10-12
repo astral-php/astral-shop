@@ -12,6 +12,10 @@ $selected = (string) ($selected ?? '');
 ?>
 <section class="admin-panel" style="max-width:40rem">
     <h1>Livraison</h1>
+    <?php
+    $checkoutStep = 'livraison';
+    require dirname(__DIR__) . '/partials/checkout-steps.php';
+    ?>
     <p class="admin-nav"><a href="/checkout">← Adresse</a></p>
 
     <div class="cart-summary" style="margin-bottom:1.25rem">

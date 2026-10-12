@@ -40,7 +40,10 @@ $symbol = (string) ($shop['currency_symbol'] ?? '€');
                 <?php endif ?>
             </p>
             <p style="margin:0;color:var(--muted);font-size:0.9rem">
-                Stock appliqué : <?= (int) ($order->stock_applied ?? 0) === 1 ? 'Oui' : 'Non' ?>
+                Stock appliqué : <?= $order->hasStockApplied() ? 'Oui' : 'Non' ?>
+                <?php if ($order->payment_due_at): ?>
+                    <br>Échéance paiement : <?= htmlspecialchars($order->payment_due_at, ENT_QUOTES, 'UTF-8') ?>
+                <?php endif ?>
                 <?php if ($order->stripe_intent_id): ?>
                     <br>Stripe : <code style="font-size:0.8rem"><?= htmlspecialchars($order->stripe_intent_id, ENT_QUOTES, 'UTF-8') ?></code>
                 <?php endif ?>
@@ -76,6 +79,12 @@ $symbol = (string) ($shop['currency_symbol'] ?? '€');
                 <p class="order-actions-card__hint">Colis expédié — aucune action restante.</p>
             <?php elseif (!$order->isPaid() && $order->payment_method === \App\Models\Order::PAYMENT_CARD): ?>
                 <p class="order-actions-card__hint">Paiement carte : en attente de confirmation Stripe.</p>
+            <?php elseif ($order->isCancelled()): ?>
+                <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/delete"
+                      onsubmit="return confirm('Supprimer définitivement cette commande annulée ?');">
+                    <?= $csrf->field() ?>
+                    <button type="submit" class="btn btn-ghost order-actions-card__btn link-danger">Supprimer définitivement</button>
+                </form>
             <?php else: ?>
                 <p class="order-actions-card__hint">Aucune action disponible.</p>
             <?php endif ?>

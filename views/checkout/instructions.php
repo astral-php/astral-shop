@@ -9,11 +9,35 @@ $payment = is_array($shop['payment'] ?? null) ? $shop['payment'] : [];
 $transfer = is_array($payment['transfer'] ?? null) ? $payment['transfer'] : [];
 $check = is_array($payment['check'] ?? null) ? $payment['check'] : [];
 $ref = $order->paymentReference() ?? ('CMD-' . $order->id);
+$isTransfer = $order->payment_method === Order::PAYMENT_TRANSFER;
+$isCheck = $order->payment_method === Order::PAYMENT_CHECK;
+$offlineDays = max(1, (int) ($payment['offline_payment_days'] ?? 7));
+$dueLabel = null;
+if (is_string($order->payment_due_at) && $order->payment_due_at !== '') {
+    $dueTs = strtotime($order->payment_due_at);
+    $dueLabel = $dueTs !== false ? date('d/m/Y', $dueTs) : $order->payment_due_at;
+}
 ?>
 <section class="admin-panel" style="max-width:40rem">
-    <div class="admin-panel__head">
-        <h1>Paiement commande #<?= (int) $order->id ?></h1>
-        <a class="btn btn-ghost" href="/boutique">Boutique</a>
+    <?php
+    $checkoutStep = 'confirmation';
+    require dirname(__DIR__) . '/partials/checkout-steps.php';
+    ?>
+
+    <div class="checkout-confirmed">
+        <p class="checkout-confirmed__eyebrow">Étape Confirmation</p>
+        <h1 class="checkout-confirmed__title">Commande confirmée</h1>
+        <p class="checkout-confirmed__lead">
+            Commande <strong>#<?= (int) $order->id ?></strong> enregistrée.
+            Le tunnel est terminé : adresse et livraison ne sont plus modifiables.
+            Le stock est réservé
+            <?php if ($dueLabel !== null): ?>
+                jusqu’au <strong><?= htmlspecialchars($dueLabel, ENT_QUOTES, 'UTF-8') ?></strong>
+            <?php else: ?>
+                pendant <?= (int) $offlineDays ?> jour<?= $offlineDays > 1 ? 's' : '' ?>
+            <?php endif ?>
+            — réglez le montant ci-dessous ; nous validerons le paiement dès réception.
+        </p>
     </div>
 
     <p style="margin:0 0 1rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
@@ -28,7 +52,7 @@ $ref = $order->paymentReference() ?? ('CMD-' . $order->id);
         <strong><?= htmlspecialchars($order->totalLabel($symbol), ENT_QUOTES, 'UTF-8') ?></strong>
     </p>
 
-    <?php if ($order->payment_method === Order::PAYMENT_TRANSFER): ?>
+    <?php if ($isTransfer): ?>
         <div class="order-detail-card" style="margin-bottom:1.25rem">
             <h2 class="section-title" style="margin-top:0">Virement bancaire</h2>
             <p style="color:var(--muted);line-height:1.55;margin:0 0 0.85rem">
@@ -46,9 +70,13 @@ $ref = $order->paymentReference() ?? ('CMD-' . $order->id);
                 <dd><code><?= htmlspecialchars($ref, ENT_QUOTES, 'UTF-8') ?></code></dd>
                 <dt>Montant</dt>
                 <dd><?= htmlspecialchars(Money::formatCents($order->total_cents, $symbol), ENT_QUOTES, 'UTF-8') ?></dd>
+                <?php if ($dueLabel !== null): ?>
+                    <dt>À régler avant</dt>
+                    <dd><?= htmlspecialchars($dueLabel, ENT_QUOTES, 'UTF-8') ?></dd>
+                <?php endif ?>
             </dl>
         </div>
-    <?php elseif ($order->payment_method === Order::PAYMENT_CHECK): ?>
+    <?php elseif ($isCheck): ?>
         <div class="order-detail-card" style="margin-bottom:1.25rem">
             <h2 class="section-title" style="margin-top:0">Paiement par chèque</h2>
             <p style="color:var(--muted);line-height:1.55;margin:0 0 0.85rem">
@@ -64,14 +92,24 @@ $ref = $order->paymentReference() ?? ('CMD-' . $order->id);
                 <dd><code><?= htmlspecialchars($ref, ENT_QUOTES, 'UTF-8') ?></code></dd>
                 <dt>Montant</dt>
                 <dd><?= htmlspecialchars(Money::formatCents($order->total_cents, $symbol), ENT_QUOTES, 'UTF-8') ?></dd>
+                <?php if ($dueLabel !== null): ?>
+                    <dt>À régler avant</dt>
+                    <dd><?= htmlspecialchars($dueLabel, ENT_QUOTES, 'UTF-8') ?></dd>
+                <?php endif ?>
             </dl>
         </div>
     <?php endif ?>
 
     <div style="display:flex;flex-wrap:wrap;gap:0.65rem;align-items:center;margin-top:1rem">
         <a class="btn btn-primary" href="/orders/<?= (int) $order->id ?>">Voir ma commande</a>
-        <?php if ($order->isOpen()): ?>
-            <a class="btn btn-ghost" href="/checkout/change-payment/<?= (int) $order->id ?>">Changer de moyen de paiement</a>
-        <?php endif ?>
+        <a class="btn btn-ghost" href="/boutique">Retour à la boutique</a>
     </div>
+
+    <?php if ($order->isOpen()): ?>
+        <p class="product-detail__note" style="margin:1.25rem 0 0">
+            Besoin d’un autre moyen ?
+            <a href="/checkout/change-payment/<?= (int) $order->id ?>">Changer de moyen de paiement</a>
+            (annule cette commande et recommence l’étape Validation).
+        </p>
+    <?php endif ?>
 </section>

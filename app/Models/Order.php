@@ -45,7 +45,21 @@ final class Order
     public string $shipping_city = '';
     public string $shipping_country = 'FR';
     public int|string $stock_applied = 0;
+
+    /** Échéance paiement offline (virement / chèque), null pour carte. */
+    public ?string $payment_due_at = null;
+
     public string $created_at = '';
+
+    public function isOfflinePayment(): bool
+    {
+        return in_array($this->payment_method, [self::PAYMENT_TRANSFER, self::PAYMENT_CHECK], true);
+    }
+
+    public function hasStockApplied(): bool
+    {
+        return (int) ($this->stock_applied ?? 0) === 1;
+    }
 
     /** Jointure admin (users.name / users.email). */
     public ?string $user_name = null;

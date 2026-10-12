@@ -296,7 +296,10 @@ final class CheckoutController extends AbstractController
         }
 
         $this->clearCheckoutSession();
-        $this->session->flash('success', 'Commande enregistrée — suivez les instructions de paiement.');
+        $this->session->flash(
+            'success',
+            'Commande confirmée — suivez les instructions ci-dessous pour régler (paiement validé à réception).'
+        );
         return $this->redirect('/checkout/instructions/' . $order->id);
     }
 
@@ -322,7 +325,7 @@ final class CheckoutController extends AbstractController
         }
 
         return $this->render('checkout/instructions', [
-            'title' => 'Paiement commande #' . $order->id,
+            'title' => 'Commande confirmée #' . $order->id,
             'shop'  => $this->shop,
             'order' => $order,
         ]);
@@ -392,10 +395,7 @@ final class CheckoutController extends AbstractController
             return;
         }
 
-        $this->orderDao->update($order->id, [
-            'status'           => Order::STATUS_CANCELLED,
-            'stripe_intent_id' => null,
-        ]);
+        $this->checkout->cancelOpenOrder($order);
     }
 
     private function findOwnedOrder(int $orderId): ?Order

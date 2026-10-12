@@ -12,6 +12,11 @@ if (file_exists(BASE_PATH . '/.env')) {
     $dotenv->safeLoad();
 }
 
+use App\Console\Commands\ExpireOfflineOrdersCommand;
+use App\Dao\OrderDao;
+use App\Dao\OrderItemDao;
+use App\Dao\ProductDao;
+use App\Services\OrderStockService;
 use Core\Console\Console;
 use Core\Console\Commands\ClearCacheCommand;
 use Core\Console\Commands\MakeControllerCommand;
@@ -22,6 +27,7 @@ use Core\Console\Commands\MakeModuleCommand;
 use Core\Console\Commands\MigrateCommand;
 use Core\Console\Commands\MigrateRollbackCommand;
 use Core\Console\Commands\MigrateStatusCommand;
+use Core\Logger;
 use Database\Connection;
 use Database\Migration\Migrator;
 
@@ -44,6 +50,13 @@ try {
     $console->register(new MigrateCommand($migrator));
     $console->register(new MigrateRollbackCommand($migrator));
     $console->register(new MigrateStatusCommand($migrator));
+
+    $orderDao     = new OrderDao($pdo);
+    $orderItemDao = new OrderItemDao($pdo);
+    $productDao   = new ProductDao($pdo);
+    $logger       = new Logger(BASE_PATH . '/storage/logs');
+    $stock        = new OrderStockService($pdo, $orderDao, $orderItemDao, $productDao, $logger);
+    $console->register(new ExpireOfflineOrdersCommand($orderDao, $stock));
 } catch (\Throwable $e) {
     fwrite(STDERR, "\033[33m⚠ Commandes de migration indisponibles : " . $e->getMessage() . "\033[0m\n");
 }
