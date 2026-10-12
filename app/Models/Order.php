@@ -44,6 +44,14 @@ final class Order
     public string $shipping_postal = '';
     public string $shipping_city = '';
     public string $shipping_country = 'FR';
+
+    /** Snapshot facturation (peut différer de la livraison). */
+    public string $billing_name = '';
+    public string $billing_line1 = '';
+    public string $billing_postal = '';
+    public string $billing_city = '';
+    public string $billing_country = 'FR';
+
     public int|string $stock_applied = 0;
 
     /** Échéance paiement offline (virement / chèque), null pour carte. */
@@ -169,6 +177,41 @@ final class Order
         }
 
         return 'CMD-' . $this->id;
+    }
+
+    /** Adresse facturation effective (fallback livraison pour anciennes commandes). */
+    public function billingName(): string
+    {
+        return $this->billing_name !== '' ? $this->billing_name : $this->shipping_name;
+    }
+
+    public function billingLine1(): string
+    {
+        return $this->billing_line1 !== '' ? $this->billing_line1 : $this->shipping_line1;
+    }
+
+    public function billingPostal(): string
+    {
+        return $this->billing_postal !== '' ? $this->billing_postal : $this->shipping_postal;
+    }
+
+    public function billingCity(): string
+    {
+        return $this->billing_city !== '' ? $this->billing_city : $this->shipping_city;
+    }
+
+    public function billingCountry(): string
+    {
+        return $this->billing_country !== '' ? $this->billing_country : $this->shipping_country;
+    }
+
+    public function billingSameAsShippingSnapshot(): bool
+    {
+        return $this->billingName() === $this->shipping_name
+            && $this->billingLine1() === $this->shipping_line1
+            && $this->billingPostal() === $this->shipping_postal
+            && $this->billingCity() === $this->shipping_city
+            && $this->billingCountry() === $this->shipping_country;
     }
 
     /**

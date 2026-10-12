@@ -38,6 +38,13 @@ final class CheckoutService
      *   shipping_city: string,
      *   shipping_country: string
      * } $shipping
+     * @param array{
+     *   billing_name: string,
+     *   billing_line1: string,
+     *   billing_postal: string,
+     *   billing_city: string,
+     *   billing_country: string
+     * }|null $billing null → copie de la livraison
      * @return array{ok: true, order: Order}|array{ok: false, error: string}
      */
     public function placeOrder(
@@ -45,6 +52,7 @@ final class CheckoutService
         array $shipping,
         string $paymentMethod,
         ShippingSelection $selection,
+        ?array $billing = null,
     ): array {
         $allowedMethods = [Order::PAYMENT_CARD, Order::PAYMENT_TRANSFER, Order::PAYMENT_CHECK];
         if (!in_array($paymentMethod, $allowedMethods, true)) {
@@ -96,6 +104,14 @@ final class CheckoutService
         $shippingCents = $selection->quote->priceCents;
         $total = $this->shippingService->total($subtotal, $selection);
 
+        $billing ??= [
+            'billing_name'    => $shipping['shipping_name'],
+            'billing_line1'   => $shipping['shipping_line1'],
+            'billing_postal'    => $shipping['shipping_postal'],
+            'billing_city'    => $shipping['shipping_city'],
+            'billing_country' => $shipping['shipping_country'],
+        ];
+
         try {
             $this->pdo->beginTransaction();
 
@@ -115,6 +131,11 @@ final class CheckoutService
                 'shipping_postal'      => $shipping['shipping_postal'],
                 'shipping_city'      => $shipping['shipping_city'],
                 'shipping_country'   => $shipping['shipping_country'],
+                'billing_name'       => $billing['billing_name'],
+                'billing_line1'      => $billing['billing_line1'],
+                'billing_postal'       => $billing['billing_postal'],
+                'billing_city'       => $billing['billing_city'],
+                'billing_country'    => $billing['billing_country'],
             ]);
 
             foreach ($prepared as $row) {
@@ -167,6 +188,13 @@ final class CheckoutService
      *     shipping_postal: string,
      *     shipping_city: string,
      *     shipping_country: string
+     *   },
+     *   billing: array{
+     *     billing_name: string,
+     *     billing_line1: string,
+     *     billing_postal: string,
+     *     billing_city: string,
+     *     billing_country: string
      *   }
      * }|array{ok: false, error: string}
      */
@@ -194,6 +222,14 @@ final class CheckoutService
             'shipping_country' => $order->shipping_country,
         ];
 
+        $billing = [
+            'billing_name'    => $order->billingName(),
+            'billing_line1'   => $order->billingLine1(),
+            'billing_postal'    => $order->billingPostal(),
+            'billing_city'    => $order->billingCity(),
+            'billing_country' => $order->billingCountry(),
+        ];
+
         $cancel = $this->stock->cancelAndRelease($order);
         if ($cancel['ok'] !== true) {
             return ['ok' => false, 'error' => $cancel['error']];
@@ -201,7 +237,7 @@ final class CheckoutService
 
         $this->cart->replaceItems($items);
 
-        return ['ok' => true, 'shipping' => $shipping];
+        return ['ok' => true, 'shipping' => $shipping, 'billing' => $billing];
     }
 
     /** Annule une commande ouverte (pending/failed) et libère le stock réservé. */

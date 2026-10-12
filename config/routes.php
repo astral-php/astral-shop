@@ -66,9 +66,10 @@ return function (Router $router): void {
         $router->post('/reset-password',  AuthController::class, 'resetPassword')->middleware(GuestMiddleware::class);
 
         $router->group('', function (Router $r): void {
-            $r->get('/profile',           ProfileController::class, 'editForm');
-            $r->post('/profile',          ProfileController::class, 'update');
-            $r->post('/profile/password', ProfileController::class, 'updatePassword');
+            $r->get('/profile',            ProfileController::class, 'editForm');
+            $r->post('/profile',           ProfileController::class, 'update');
+            $r->post('/profile/password',  ProfileController::class, 'updatePassword');
+            $r->post('/profile/addresses', ProfileController::class, 'updateAddresses');
 
             $r->get('/checkout',                    CheckoutController::class, 'show');
             $r->post('/checkout',                   CheckoutController::class, 'place');

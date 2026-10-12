@@ -152,4 +152,106 @@ final class ProfileController extends AbstractController
         $this->session->flash('success', 'Mot de passe modifié avec succès.');
         return $this->redirect('/profile');
     }
+
+    // -------------------------------------------------------------------------
+    // Adresses livraison / facturation
+    // -------------------------------------------------------------------------
+
+    public function updateAddresses(): Response
+    {
+        $user = $this->userDao->findById((int) $this->auth->id());
+        $sameRaw = $this->request->input('billing_same_as_shipping', '1');
+        if (is_array($sameRaw)) {
+            $sameRaw = end($sameRaw);
+        }
+        $same = (string) $sameRaw === '1' || (string) $sameRaw === 'on';
+
+        $shipping = [
+            'shipping_name'    => trim((string) $this->request->input('shipping_name', '')),
+            'shipping_line1'   => trim((string) $this->request->input('shipping_line1', '')),
+            'shipping_postal'    => trim((string) $this->request->input('shipping_postal', '')),
+            'shipping_city'    => trim((string) $this->request->input('shipping_city', '')),
+            'shipping_country' => strtoupper(trim((string) $this->request->input('shipping_country', 'FR'))),
+        ];
+
+        if ($same) {
+            $billing = [
+                'billing_name'    => $shipping['shipping_name'],
+                'billing_line1'   => $shipping['shipping_line1'],
+                'billing_postal'    => $shipping['shipping_postal'],
+                'billing_city'    => $shipping['shipping_city'],
+                'billing_country' => $shipping['shipping_country'],
+            ];
+        } else {
+            $billing = [
+                'billing_name'    => trim((string) $this->request->input('billing_name', '')),
+                'billing_line1'   => trim((string) $this->request->input('billing_line1', '')),
+                'billing_postal'    => trim((string) $this->request->input('billing_postal', '')),
+                'billing_city'    => trim((string) $this->request->input('billing_city', '')),
+                'billing_country' => strtoupper(trim((string) $this->request->input('billing_country', 'FR'))),
+            ];
+        }
+
+        $rules = [
+            'shipping_name'    => 'required|min:2|max:150',
+            'shipping_line1'   => 'required|min:3|max:255',
+            'shipping_postal'    => 'required',
+            'shipping_city'    => 'required|min:2|max:100',
+            'shipping_country' => 'required|min:2|max:2',
+        ];
+        $payload = $shipping;
+
+        if (!$same) {
+            $rules = array_merge($rules, [
+                'billing_name'    => 'required|min:2|max:150',
+                'billing_line1'   => 'required|min:3|max:255',
+                'billing_postal'    => 'required',
+                'billing_city'    => 'required|min:2|max:100',
+                'billing_country' => 'required|min:2|max:2',
+            ]);
+            $payload = array_merge($payload, $billing);
+        }
+
+        $v = $this->validate($payload, $rules);
+        $errors = $v->errors();
+
+        foreach (['shipping_postal', 'billing_postal'] as $postalKey) {
+            if (!isset($payload[$postalKey])) {
+                continue;
+            }
+            $len = mb_strlen((string) $payload[$postalKey]);
+            if ($payload[$postalKey] !== '' && ($len < 3 || $len > 20)) {
+                $errors[$postalKey] = ['Le code postal doit contenir entre 3 et 20 caractères.'];
+            }
+        }
+
+        if ($errors !== []) {
+            return $this->render('profile/edit', [
+                'title'        => 'Mon profil',
+                'user'         => $user,
+                'errors'       => $errors,
+                'old'          => array_merge($shipping, $billing, [
+                    'billing_same_as_shipping' => $same ? '1' : '0',
+                ]),
+                'address_tab'  => true,
+            ]);
+        }
+
+        $this->userDao->updateAddresses((int) $this->auth->id(), [
+            'shipping_name'            => $shipping['shipping_name'],
+            'shipping_line1'           => $shipping['shipping_line1'],
+            'shipping_postal'            => $shipping['shipping_postal'],
+            'shipping_city'            => $shipping['shipping_city'],
+            'shipping_country'         => $shipping['shipping_country'],
+            'billing_same_as_shipping' => $same ? 1 : 0,
+            'billing_name'             => $billing['billing_name'],
+            'billing_line1'            => $billing['billing_line1'],
+            'billing_postal'             => $billing['billing_postal'],
+            'billing_city'             => $billing['billing_city'],
+            'billing_country'          => $billing['billing_country'],
+        ]);
+
+        $this->session->flash('success', 'Adresses enregistrées.');
+        return $this->redirect('/profile#addresses');
+    }
 }

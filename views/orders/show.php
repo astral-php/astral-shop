@@ -68,6 +68,18 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         <?= htmlspecialchars($order->shipping_country, ENT_QUOTES, 'UTF-8') ?>
     </p>
 
+    <h2 class="section-title">Facturation</h2>
+    <p style="color:var(--muted);line-height:1.5">
+        <?php if ($order->billingSameAsShippingSnapshot()): ?>
+            Identique à la livraison
+        <?php else: ?>
+            <?= htmlspecialchars($order->billingName(), ENT_QUOTES, 'UTF-8') ?><br>
+            <?= htmlspecialchars($order->billingLine1(), ENT_QUOTES, 'UTF-8') ?><br>
+            <?= htmlspecialchars($order->billingPostal() . ' ' . $order->billingCity(), ENT_QUOTES, 'UTF-8') ?><br>
+            <?= htmlspecialchars($order->billingCountry(), ENT_QUOTES, 'UTF-8') ?>
+        <?php endif ?>
+    </p>
+
     <h2 class="section-title">Articles</h2>
     <div class="table-wrap">
         <table class="data-table">

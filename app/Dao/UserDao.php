@@ -107,6 +107,55 @@ final class UserDao extends AbstractDao
     }
 
     /**
+     * Enregistre les adresses livraison / facturation du profil.
+     *
+     * @param array{
+     *   shipping_name: string,
+     *   shipping_line1: string,
+     *   shipping_postal: string,
+     *   shipping_city: string,
+     *   shipping_country: string,
+     *   billing_same_as_shipping: int,
+     *   billing_name: string,
+     *   billing_line1: string,
+     *   billing_postal: string,
+     *   billing_city: string,
+     *   billing_country: string
+     * } $addresses
+     */
+    public function updateAddresses(int $userId, array $addresses): void
+    {
+        $this->pdo->prepare(
+            "UPDATE {$this->getTable()} SET
+                shipping_name = :shipping_name,
+                shipping_line1 = :shipping_line1,
+                shipping_postal = :shipping_postal,
+                shipping_city = :shipping_city,
+                shipping_country = :shipping_country,
+                billing_same_as_shipping = :billing_same_as_shipping,
+                billing_name = :billing_name,
+                billing_line1 = :billing_line1,
+                billing_postal = :billing_postal,
+                billing_city = :billing_city,
+                billing_country = :billing_country
+             WHERE id = :id"
+        )->execute([
+            ':shipping_name'             => $addresses['shipping_name'],
+            ':shipping_line1'            => $addresses['shipping_line1'],
+            ':shipping_postal'             => $addresses['shipping_postal'],
+            ':shipping_city'             => $addresses['shipping_city'],
+            ':shipping_country'          => $addresses['shipping_country'],
+            ':billing_same_as_shipping'  => $addresses['billing_same_as_shipping'],
+            ':billing_name'              => $addresses['billing_name'],
+            ':billing_line1'             => $addresses['billing_line1'],
+            ':billing_postal'              => $addresses['billing_postal'],
+            ':billing_city'              => $addresses['billing_city'],
+            ':billing_country'           => $addresses['billing_country'],
+            ':id'                        => $userId,
+        ]);
+    }
+
+    /**
      * Met à jour le mot de passe d'un utilisateur.
      */
     public function updatePassword(int $userId, string $newPassword): void

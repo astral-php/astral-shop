@@ -235,6 +235,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             checkout:        $c->make(CheckoutService::class),
             shippingService: $c->make(ShippingService::class),
             orderDao:        $c->make(OrderDao::class),
+            userDao:         $c->make(UserDao::class),
             shop:            $shopConfig,
         ));
 

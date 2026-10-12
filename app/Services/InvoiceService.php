@@ -95,14 +95,27 @@ final class InvoiceService
                 . '</tr>';
         }
 
-        $addr = htmlspecialchars(
+        $shipAddr = htmlspecialchars(
             trim($order->shipping_name . "\n" . $order->shipping_line1 . "\n"
                 . $order->shipping_postal . ' ' . $order->shipping_city . "\n"
                 . $order->shipping_country),
             ENT_QUOTES,
             'UTF-8',
         );
-        $addr = nl2br($addr);
+        $shipAddr = nl2br($shipAddr);
+
+        $billAddr = htmlspecialchars(
+            trim($order->billingName() . "\n" . $order->billingLine1() . "\n"
+                . $order->billingPostal() . ' ' . $order->billingCity() . "\n"
+                . $order->billingCountry()),
+            ENT_QUOTES,
+            'UTF-8',
+        );
+        $billAddr = nl2br($billAddr);
+
+        $billingBlock = $order->billingSameAsShippingSnapshot()
+            ? "<p><strong>Livraison / facturation</strong><br>{$shipAddr}</p>"
+            : "<p><strong>Livraison</strong><br>{$shipAddr}</p><p><strong>Facturation</strong><br>{$billAddr}</p>";
 
         $subtotal = htmlspecialchars($order->subtotalLabel($symbol), ENT_QUOTES, 'UTF-8');
         $shipping = htmlspecialchars($order->shippingLabel($symbol), ENT_QUOTES, 'UTF-8');
@@ -128,7 +141,7 @@ final class InvoiceService
             <p><strong>Commande #{$order->id}</strong> · Réf. {$ref}<br>
             Date : {$date}<br>
             Paiement : {$method}</p>
-            <p><strong>Livraison / facturation</strong><br>{$addr}</p>
+            {$billingBlock}
             <table>
                 <thead><tr><th>Article</th><th style="text-align:center">Qté</th><th style="text-align:right">P.U. TTC</th><th style="text-align:right">Total</th></tr></thead>
                 <tbody>{$rows}</tbody>
