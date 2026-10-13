@@ -56,6 +56,10 @@
         nav { display: flex; flex-wrap: wrap; gap: 0.85rem; align-items: center; font-size: 0.9rem; }
         nav a { color: var(--muted); text-decoration: none; }
         nav a:hover { color: var(--accent); }
+        nav a.btn,
+        nav a.btn:hover { text-decoration: none; }
+        nav a.btn-nav-account { color: var(--accent); }
+        nav a.btn-nav-account:hover { color: #3730a3; }
         .btn {
             display: inline-block; border-radius: 0.55rem; padding: 0.55rem 1rem;
             font-weight: 600; font-size: 0.9rem; border: 1px solid transparent;
@@ -64,6 +68,29 @@
         .btn-primary:hover { filter: brightness(1.05); text-decoration: none; color: #fff; }
         .btn-ghost { border-color: var(--line); color: var(--ink); background: var(--panel); }
         .btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+        .btn-nav-account {
+            border-color: #c7d2fe;
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 0.4rem 0.85rem;
+            font-size: 0.8rem;
+        }
+        .btn-nav-account:hover {
+            border-color: var(--accent);
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .nav-user {
+            display: inline-block;
+            border-radius: 0.55rem;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            color: var(--ink);
+            line-height: 1.2;
+        }
         main { padding-top: 1.75rem; }
         .flash-ok, .flash-err {
             border-radius: 0.75rem; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.9rem;
@@ -98,12 +125,12 @@
             <nav>
                 <a href="/boutique">Boutique</a>
                 <?php if ($auth->check()): ?>
-                    <span style="color:var(--muted)"><?= htmlspecialchars($auth->name(), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="nav-user"><?= htmlspecialchars($auth->name(), ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if ($isAdmin): ?>
                         <a class="btn btn-ghost" href="/admin/orders" style="padding:0.4rem 0.85rem;font-size:0.8rem">Espace admin</a>
                     <?php else: ?>
-                        <a href="/orders">Commandes</a>
-                        <a href="/profile">Profil</a>
+                        <a class="btn btn-nav-account" href="/orders">Commandes</a>
+                        <a class="btn btn-nav-account" href="/profile">Profil</a>
                     <?php endif ?>
                     <form method="POST" action="/logout" style="display:inline;margin:0">
                         <?= $csrf->field() ?>

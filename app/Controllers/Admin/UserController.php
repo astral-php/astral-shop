@@ -11,6 +11,7 @@ use Core\Auth\Role;
 use Core\Events\EventDispatcher;
 use Core\Exception\NotFoundException;
 use Core\Http\Response;
+use Core\Mailer\Mailer;
 use Core\Request;
 use Core\Session;
 use Core\View;
@@ -28,6 +29,9 @@ final class UserController extends AdminController
         private Session $session,
         private Auth $auth,
         private EventDispatcher $dispatcher,
+        private Mailer $mailer,
+        private string $registrationMode = 'direct',
+        private string $appBaseUrl = '',
     ) {
         parent::__construct($view);
     }
@@ -89,10 +93,13 @@ final class UserController extends AdminController
             $role = Role::USER;
         }
 
+        $name  = (string) ($post['name'] ?? '');
+        $email = (string) ($post['email'] ?? '');
+
         try {
-            $this->userDao->createUser(
-                name:          (string) ($post['name'] ?? ''),
-                email:         (string) ($post['email'] ?? ''),
+            $userId = $this->userDao->createUser(
+                name:          $name,
+                email:         $email,
                 plainPassword: (string) ($post['password'] ?? ''),
                 role:          $role,
             );
@@ -105,9 +112,45 @@ final class UserController extends AdminController
         }
 
         $label = $role === Role::ADMIN ? 'gestionnaire' : 'client';
-        $this->session->flash('success', 'Compte ' . $label . ' créé.');
+
+        // Même règle que /register : en mode confirm, le compte doit valider son e-mail.
+        if ($this->registrationMode === 'confirm') {
+            $token = bin2hex(random_bytes(32));
+            $this->userDao->setVerificationToken($userId, $token);
+            $this->sendVerificationEmail($email, $name, $token);
+            $this->session->flash(
+                'success',
+                'Compte ' . $label . ' créé. Un e-mail de confirmation a été envoyé à ' . $email . '.',
+            );
+        } else {
+            $this->session->flash('success', 'Compte ' . $label . ' créé.');
+        }
 
         return $this->redirect('/admin/users?role=' . rawurlencode($role));
+    }
+
+    private function sendVerificationEmail(string $to, string $name, string $token): void
+    {
+        $link = rtrim($this->appBaseUrl, '/') . '/verify-email?token=' . $token;
+        $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
+        $html = <<<HTML
+        <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px">
+            <h2 style="color:#4338ca">Confirmez votre adresse e-mail</h2>
+            <p>Bonjour <strong>{$safeName}</strong>,</p>
+            <p>Un compte a été créé pour vous. Cliquez sur le bouton ci-dessous pour l’activer :</p>
+            <p style="text-align:center;margin:32px 0">
+                <a href="{$link}"
+                   style="background:#4f46e5;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">
+                    Confirmer mon compte
+                </a>
+            </p>
+            <p style="color:#6b7280;font-size:13px">Ce lien expire dans 24 heures.<br>
+            Si vous n’attendiez pas ce message, ignorez-le.</p>
+        </div>
+        HTML;
+
+        $this->mailer->send($to, 'Confirmez votre adresse e-mail', $html);
     }
 
     public function updateRole(string $id): Response

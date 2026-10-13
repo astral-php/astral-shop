@@ -27,10 +27,12 @@ final class OrderDao extends AbstractDao
     {
         /** @var list<Order> */
         return $this->query(
-            "SELECT * FROM {$this->getTable()}
-             WHERE user_id = :uid
-               AND status != 'cancelled'
-             ORDER BY created_at DESC, id DESC",
+            "SELECT o.*, s.method_code AS shipping_method_code
+             FROM {$this->getTable()} o
+             LEFT JOIN order_shipments s ON s.order_id = o.id
+             WHERE o.user_id = :uid
+               AND o.status != 'cancelled'
+             ORDER BY o.created_at DESC, o.id DESC",
             [':uid' => $userId],
         );
     }
@@ -38,8 +40,10 @@ final class OrderDao extends AbstractDao
     public function findForUser(int $orderId, int $userId): ?Order
     {
         $rows = $this->query(
-            "SELECT * FROM {$this->getTable()}
-             WHERE id = :id AND user_id = :uid
+            "SELECT o.*, s.method_code AS shipping_method_code
+             FROM {$this->getTable()} o
+             LEFT JOIN order_shipments s ON s.order_id = o.id
+             WHERE o.id = :id AND o.user_id = :uid
              LIMIT 1",
             [':id' => $orderId, ':uid' => $userId],
         );
@@ -74,9 +78,11 @@ final class OrderDao extends AbstractDao
      */
     public function findAllWithUser(?string $paymentStatus = null, ?string $fulfillmentStatus = null): array
     {
-        $sql = "SELECT o.*, u.name AS user_name, u.email AS user_email
+        $sql = "SELECT o.*, u.name AS user_name, u.email AS user_email,
+                       s.method_code AS shipping_method_code
                 FROM {$this->getTable()} o
-                LEFT JOIN users u ON u.id = o.user_id";
+                LEFT JOIN users u ON u.id = o.user_id
+                LEFT JOIN order_shipments s ON s.order_id = o.id";
         $params = [];
         $where  = [];
 
@@ -106,9 +112,11 @@ final class OrderDao extends AbstractDao
     public function findByIdWithUser(int $orderId): ?Order
     {
         $rows = $this->query(
-            "SELECT o.*, u.name AS user_name, u.email AS user_email
+            "SELECT o.*, u.name AS user_name, u.email AS user_email,
+                    s.method_code AS shipping_method_code
              FROM {$this->getTable()} o
              LEFT JOIN users u ON u.id = o.user_id
+             LEFT JOIN order_shipments s ON s.order_id = o.id
              WHERE o.id = :id
              LIMIT 1",
             [':id' => $orderId],
@@ -135,5 +143,84 @@ final class OrderDao extends AbstractDao
              ORDER BY payment_due_at ASC, id ASC",
             [':now' => $now],
         );
+    }
+
+    /**
+     * Compteurs par statut paiement, optionnellement bornés par le filtre colis.
+     * Clé '' = Actives (hors cancelled).
+     *
+     * @return array<string, int>
+     */
+    public function countGroupedByPayment(?string $fulfillmentStatus = null): array
+    {
+        $sql = "SELECT status, COUNT(*) AS c FROM {$this->getTable()}";
+        $params = [];
+        if ($fulfillmentStatus !== null && $fulfillmentStatus !== '') {
+            $sql .= ' WHERE fulfillment_status = :fulfillment';
+            $params[':fulfillment'] = $fulfillmentStatus;
+        }
+        $sql .= ' GROUP BY status';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $byStatus = [];
+        $actives = 0;
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $status = (string) $row['status'];
+            $count = (int) $row['c'];
+            $byStatus[$status] = $count;
+            if ($status !== 'cancelled') {
+                $actives += $count;
+            }
+        }
+
+        return [
+            ''          => $actives,
+            'pending'   => $byStatus['pending'] ?? 0,
+            'paid'      => $byStatus['paid'] ?? 0,
+            'failed'    => $byStatus['failed'] ?? 0,
+            'refunded'  => $byStatus['refunded'] ?? 0,
+            'cancelled' => $byStatus['cancelled'] ?? 0,
+        ];
+    }
+
+    /**
+     * Compteurs par statut colis, optionnellement bornés par le filtre paiement.
+     * Sans filtre paiement : même périmètre que « Actives » (hors cancelled).
+     * Clé '' = Tous (somme du périmètre).
+     *
+     * @return array<string, int>
+     */
+    public function countGroupedByFulfillment(?string $paymentStatus = null): array
+    {
+        $sql = "SELECT fulfillment_status, COUNT(*) AS c FROM {$this->getTable()}";
+        $params = [];
+        if ($paymentStatus !== null && $paymentStatus !== '') {
+            $sql .= ' WHERE status = :payment';
+            $params[':payment'] = $paymentStatus;
+        } else {
+            $sql .= " WHERE status != 'cancelled'";
+        }
+        $sql .= ' GROUP BY fulfillment_status';
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $byStatus = [];
+        $total = 0;
+        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $status = (string) $row['fulfillment_status'];
+            $count = (int) $row['c'];
+            $byStatus[$status] = $count;
+            $total += $count;
+        }
+
+        return [
+            ''          => $total,
+            'awaiting'  => $byStatus['awaiting'] ?? 0,
+            'preparing' => $byStatus['preparing'] ?? 0,
+            'shipped'   => $byStatus['shipped'] ?? 0,
+        ];
     }
 }

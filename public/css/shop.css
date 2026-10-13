@@ -131,6 +131,34 @@ textarea.input { resize: vertical; min-height: 5rem; }
   color: var(--accent);
   text-decoration: none;
 }
+.btn-nav-account,
+header nav a.btn-nav-account {
+  background: var(--accent-soft);
+  border-color: #c7d2fe;
+  color: var(--accent);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+}
+.btn-nav-account:hover,
+header nav a.btn-nav-account:hover {
+  border-color: var(--accent);
+  background: #e0e7ff;
+  color: #3730a3;
+  text-decoration: none;
+}
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--shop-radius-btn);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  box-sizing: border-box;
+}
 .btn-block {
   width: 100%;
   border: none;
@@ -529,6 +557,29 @@ textarea.input { resize: vertical; min-height: 5rem; }
 .status-badge--awaiting { background: #e2e8f0; color: #334155; }
 .status-badge--preparing { background: #ffedd5; color: #9a3412; }
 .status-badge--shipped { background: #dcfce7; color: #166534; }
+.status-badge--picked-up { background: #e0f2fe; color: #0369a1; }
+
+.shipping-pickup-hint {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+.shipping-pickup-hint__label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
 
 .badge-muted {
   display: inline-block;
@@ -561,6 +612,23 @@ textarea.input { resize: vertical; min-height: 5rem; }
 .cat-pill.is-active {
   background: var(--accent);
   border-color: var(--accent);
+  color: #fff;
+}
+.cat-pill__count {
+  display: inline-block;
+  min-width: 1.15rem;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+  background: #e2e8f0;
+  color: #475569;
+  text-align: center;
+}
+.cat-pill.is-active .cat-pill__count {
+  background: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 

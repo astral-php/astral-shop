@@ -57,10 +57,25 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         </p>
     <?php endif ?>
 
-    <h2 class="section-title">Livraison</h2>
+    <?php
+    $isPickup = $order->isStorePickup()
+        || (($shipment['method_code'] ?? '') === 'store_pickup')
+        || (($shipment['carrier'] ?? '') === 'store');
+    if ($isPickup && ($order->shipping_method_code === null || $order->shipping_method_code === '')) {
+        $order->shipping_method_code = 'store_pickup';
+    }
+    $storeAddress = trim((string) ($shop['store_address'] ?? ''));
+    ?>
+    <h2 class="section-title"><?= $isPickup ? 'Retrait' : 'Livraison' ?></h2>
     <p style="color:var(--muted);line-height:1.5">
         <?php if ($shipment !== null): ?>
             <strong style="color:var(--text)"><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
+        <?php endif ?>
+        <?php if ($isPickup && $storeAddress !== ''): ?>
+            <span class="shipping-pickup-hint" style="margin:0.55rem 0 0.75rem;display:inline-block;max-width:28rem">
+                <span class="shipping-pickup-hint__label">Adresse du magasin</span>
+                <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
+            </span><br>
         <?php endif ?>
         <?= htmlspecialchars($order->shipping_name, ENT_QUOTES, 'UTF-8') ?><br>
         <?= htmlspecialchars($order->shipping_line1, ENT_QUOTES, 'UTF-8') ?><br>

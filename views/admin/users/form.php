@@ -6,6 +6,7 @@ $role = (string) ($old['role'] ?? 'admin');
 <div class="max-w-lg">
     <p class="text-sm text-slate-500 mb-6">
         Créez un <strong>gestionnaire</strong> (accès back-office) ou un <strong>client</strong> boutique.
+        En mode confirmation e-mail, un lien d’activation sera envoyé à l’adresse indiquée.
     </p>
 
     <form method="POST" action="/admin/users" class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">

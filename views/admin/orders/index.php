@@ -3,9 +3,13 @@
 /** @var array<string, mixed> $shop */
 /** @var string $filter_payment */
 /** @var string $filter_fulfillment */
+/** @var array<string, int> $payment_counts */
+/** @var array<string, int> $fulfillment_counts */
 $symbol = (string) ($shop['currency_symbol'] ?? '€');
 $filter_payment = (string) ($filter_payment ?? '');
 $filter_fulfillment = (string) ($filter_fulfillment ?? '');
+$payment_counts = $payment_counts ?? [];
+$fulfillment_counts = $fulfillment_counts ?? [];
 
 $paymentFilters = [
     ''          => 'Actives',
@@ -19,7 +23,7 @@ $fulfillmentFilters = [
     ''          => 'Tous',
     'awaiting'  => 'En attente',
     'preparing' => 'En préparation',
-    'shipped'   => 'Envoyées',
+    'shipped'   => 'Envoyées / retirées',
 ];
 
 $buildUrl = static function (string $payment, string $fulfillment): string {
@@ -42,18 +46,22 @@ $buildUrl = static function (string $payment, string $fulfillment): string {
         <p class="admin-filters__label">Paiement</p>
         <p class="cat-pills">
             <?php foreach ($paymentFilters as $key => $label): ?>
+                <?php $count = (int) ($payment_counts[$key] ?? 0); ?>
                 <a class="cat-pill<?= $filter_payment === $key ? ' is-active' : '' ?>"
                    href="<?= htmlspecialchars($buildUrl($key, $filter_fulfillment), ENT_QUOTES, 'UTF-8') ?>">
                     <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                    <span class="cat-pill__count"><?= $count ?></span>
                 </a>
             <?php endforeach ?>
         </p>
         <p class="admin-filters__label">Statut colis</p>
         <p class="cat-pills">
             <?php foreach ($fulfillmentFilters as $key => $label): ?>
+                <?php $count = (int) ($fulfillment_counts[$key] ?? 0); ?>
                 <a class="cat-pill<?= $filter_fulfillment === $key ? ' is-active' : '' ?>"
                    href="<?= htmlspecialchars($buildUrl($filter_payment, $key), ENT_QUOTES, 'UTF-8') ?>">
                     <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
+                    <span class="cat-pill__count"><?= $count ?></span>
                 </a>
             <?php endforeach ?>
         </p>

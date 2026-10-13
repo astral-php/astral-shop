@@ -43,7 +43,8 @@ return [
             'days'        => 4,
         ],
         'store_pickup' => [
-            'label' => 'Retrait en boutique',
+            'label'   => 'Retrait en boutique',
+            'address' => (string) ($_ENV['SHOP_STORE_ADDRESS'] ?? ''),
         ],
         'rates' => [],
     ],

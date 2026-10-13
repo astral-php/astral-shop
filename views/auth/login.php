@@ -7,7 +7,7 @@
             </svg>
         </div>
         <h1>Connexion</h1>
-        <p class="auth-lead">Accédez à votre espace Astral Starter</p>
+        <p class="auth-lead">Accédez à votre espace Client</p>
 
         <form method="POST" action="/login" class="form-stack">
             <?= $csrf->field() ?>

@@ -125,12 +125,13 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(SendOrderShippedEmail::class, fn (Container $c) => new SendOrderShippedEmail(
-            mailer:     $c->make(Mailer::class),
-            orderDao:   $c->make(OrderDao::class),
-            userDao:    $c->make(UserDao::class),
-            logger:     $c->make(Logger::class),
-            shop:       $shopConfig,
-            appBaseUrl: (string) ($appConfig['base_url'] ?? ''),
+            mailer:      $c->make(Mailer::class),
+            orderDao:    $c->make(OrderDao::class),
+            userDao:     $c->make(UserDao::class),
+            shipmentDao: $c->make(OrderShipmentDao::class),
+            logger:      $c->make(Logger::class),
+            shop:        $shopConfig,
+            appBaseUrl:  (string) ($appConfig['base_url'] ?? ''),
         ));
 
         $container->singleton(OrderFulfillmentService::class, fn (Container $c) => new OrderFulfillmentService(
@@ -277,12 +278,15 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(AdminUserController::class, fn (Container $c) => new AdminUserController(
-            view:       $c->make(View::class),
-            request:    $c->make(Request::class),
-            userDao:    $c->make(UserDao::class),
-            session:    $c->make(Session::class),
-            auth:       $c->make(Auth::class),
-            dispatcher: $c->make(EventDispatcher::class),
+            view:             $c->make(View::class),
+            request:          $c->make(Request::class),
+            userDao:          $c->make(UserDao::class),
+            session:          $c->make(Session::class),
+            auth:             $c->make(Auth::class),
+            dispatcher:       $c->make(EventDispatcher::class),
+            mailer:           $c->make(Mailer::class),
+            registrationMode: (string) ($appConfig['auth_registration'] ?? 'direct'),
+            appBaseUrl:       (string) ($appConfig['base_url'] ?? ''),
         ));
 
         $container->bind(AdminCategoryController::class, fn (Container $c) => new AdminCategoryController(
@@ -308,6 +312,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             session:      $c->make(Session::class),
             orderDao:     $c->make(OrderDao::class),
             orderItemDao: $c->make(OrderItemDao::class),
+            shipmentDao:  $c->make(OrderShipmentDao::class),
             fulfillment:  $c->make(OrderFulfillmentService::class),
             purge:        $c->make(CancelledOrderPurgeService::class),
             shop:         $shopConfig,

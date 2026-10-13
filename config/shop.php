@@ -9,6 +9,8 @@ declare(strict_types=1);
  */
 return [
     'store_name'   => $_ENV['SHOP_STORE_NAME']   ?? ($_ENV['APP_NAME'] ?? 'Astral Shop'),
+    /** Adresse physique pour retrait en boutique (MVP via .env ; admin/BD plus tard). */
+    'store_address' => (string) ($_ENV['SHOP_STORE_ADDRESS'] ?? ''),
     'tagline'      => $_ENV['SHOP_TAGLINE']      ?? 'Commerce moderne, expérience soignée',
     'hero_title'   => $_ENV['SHOP_HERO_TITLE']   ?? 'Une boutique claire, rapide et professionnelle',
     'hero_lead'    => $_ENV['SHOP_HERO_LEAD']    ?? 'Découvrez une sélection soignée — design épuré, parcours fluide, paiement sécurisé.',

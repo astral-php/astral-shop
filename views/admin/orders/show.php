@@ -2,7 +2,13 @@
 /** @var \App\Models\Order $order */
 /** @var list<\App\Models\OrderItem> $items */
 /** @var array<string, mixed> $shop */
+/** @var array<string, mixed>|null $shipment */
 $symbol = (string) ($shop['currency_symbol'] ?? '€');
+$shipment = is_array($shipment ?? null) ? $shipment : null;
+$isPickup = $order->isStorePickup()
+    || (($shipment['method_code'] ?? '') === 'store_pickup')
+    || (($shipment['carrier'] ?? '') === 'store');
+$storeAddress = trim((string) ($shop['store_address'] ?? ''));
 ?>
 <section class="admin-panel">
     <div class="admin-panel__head">
@@ -73,10 +79,14 @@ $symbol = (string) ($shop['currency_symbol'] ?? '€');
             <?php elseif ($order->isPaid() && $order->fulfillment_status === \App\Models\Order::FULFILLMENT_PREPARING): ?>
                 <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/mark-shipped">
                     <?= $csrf->field() ?>
-                    <button type="submit" class="btn btn-primary order-actions-card__btn">Marquer comme envoyée</button>
+                    <button type="submit" class="btn btn-primary order-actions-card__btn">
+                        <?= $isPickup ? 'Marquer comme retiré en boutique' : 'Marquer comme envoyée' ?>
+                    </button>
                 </form>
             <?php elseif ($order->isPaid() && $order->fulfillment_status === \App\Models\Order::FULFILLMENT_SHIPPED): ?>
-                <p class="order-actions-card__hint">Colis expédié — aucune action restante.</p>
+                <p class="order-actions-card__hint">
+                    <?= $isPickup ? 'Retrait effectué — aucune action restante.' : 'Colis expédié — aucune action restante.' ?>
+                </p>
             <?php elseif (!$order->isPaid() && $order->payment_method === \App\Models\Order::PAYMENT_CARD): ?>
                 <p class="order-actions-card__hint">Paiement carte : en attente de confirmation Stripe.</p>
             <?php elseif ($order->isCancelled()): ?>
@@ -100,8 +110,17 @@ $symbol = (string) ($shop['currency_symbol'] ?? '€');
         <br>User #<?= (int) $order->user_id ?>
     </p>
 
-    <h2 class="section-title">Livraison</h2>
+    <h2 class="section-title"><?= $isPickup ? 'Retrait' : 'Livraison' ?></h2>
     <p style="color:var(--muted);line-height:1.5">
+        <?php if ($shipment !== null): ?>
+            <strong style="color:var(--text)"><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
+        <?php endif ?>
+        <?php if ($isPickup && $storeAddress !== ''): ?>
+            <span class="shipping-pickup-hint" style="margin:0.5rem 0 0.75rem;display:inline-block;max-width:28rem">
+                <span class="shipping-pickup-hint__label">Adresse du magasin</span>
+                <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
+            </span><br>
+        <?php endif ?>
         <?= htmlspecialchars($order->shipping_name, ENT_QUOTES, 'UTF-8') ?><br>
         <?= htmlspecialchars($order->shipping_line1, ENT_QUOTES, 'UTF-8') ?><br>
         <?= htmlspecialchars($order->shipping_postal . ' ' . $order->shipping_city, ENT_QUOTES, 'UTF-8') ?><br>

@@ -9,6 +9,7 @@ use App\Dao\OrderItemDao;
 use App\Models\Order;
 use App\Services\CancelledOrderPurgeService;
 use App\Services\OrderFulfillmentService;
+use AstralShipping\Dao\OrderShipmentDao;
 use Core\Exception\NotFoundException;
 use Core\Http\Response;
 use Core\Request;
@@ -24,6 +25,7 @@ final class OrderController extends AdminController
         private Session $session,
         private OrderDao $orderDao,
         private OrderItemDao $orderItemDao,
+        private OrderShipmentDao $shipmentDao,
         private OrderFulfillmentService $fulfillment,
         private CancelledOrderPurgeService $purge,
         private array $shop = [],
@@ -53,15 +55,17 @@ final class OrderController extends AdminController
             $fulfillment = '';
         }
 
+        $paymentFilter = $payment !== '' ? $payment : null;
+        $fulfillmentFilter = $fulfillment !== '' ? $fulfillment : null;
+
         return $this->render('admin/orders/index', [
             'title'              => 'Commandes',
             'shop'               => $this->shop,
-            'orders'             => $this->orderDao->findAllWithUser(
-                $payment !== '' ? $payment : null,
-                $fulfillment !== '' ? $fulfillment : null,
-            ),
+            'orders'             => $this->orderDao->findAllWithUser($paymentFilter, $fulfillmentFilter),
             'filter_payment'     => $payment,
             'filter_fulfillment' => $fulfillment,
+            'payment_counts'     => $this->orderDao->countGroupedByPayment($fulfillmentFilter),
+            'fulfillment_counts' => $this->orderDao->countGroupedByFulfillment($paymentFilter),
         ]);
     }
 
@@ -72,11 +76,17 @@ final class OrderController extends AdminController
             throw new NotFoundException('Commande introuvable.');
         }
 
+        $shipment = $this->shipmentDao->findByOrder($order->id);
+        if ($order->shipping_method_code === null && is_array($shipment)) {
+            $order->shipping_method_code = (string) ($shipment['method_code'] ?? '');
+        }
+
         return $this->render('admin/orders/show', [
-            'title' => 'Commande #' . $order->id,
-            'shop'  => $this->shop,
-            'order' => $order,
-            'items' => $this->orderItemDao->findByOrder($order->id),
+            'title'    => 'Commande #' . $order->id,
+            'shop'     => $this->shop,
+            'order'    => $order,
+            'items'    => $this->orderItemDao->findByOrder($order->id),
+            'shipment' => $shipment,
         ]);
     }
 
@@ -92,7 +102,13 @@ final class OrderController extends AdminController
 
     public function markShipped(string $id): Response
     {
-        return $this->runTransition((int) $id, fn (int $oid) => $this->fulfillment->markShipped($oid), 'Commande marquée comme envoyée — e-mail client envoyé.');
+        $order = $this->orderDao->findByIdWithUser((int) $id);
+        $pickup = $order instanceof Order && $order->isStorePickup();
+        $msg = $pickup
+            ? 'Commande marquée comme retirée en boutique — e-mail client envoyé.'
+            : 'Commande marquée comme envoyée — e-mail client envoyé.';
+
+        return $this->runTransition((int) $id, fn (int $oid) => $this->fulfillment->markShipped($oid), $msg);
     }
 
     public function destroy(string $id): Response

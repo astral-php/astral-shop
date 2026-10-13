@@ -73,6 +73,9 @@ final class Order
     public ?string $user_name = null;
     public ?string $user_email = null;
 
+    /** Jointure order_shipments.method_code (liste / détail). */
+    public ?string $shipping_method_code = null;
+
     public function isPaid(): bool
     {
         return $this->status === 'paid';
@@ -141,12 +144,17 @@ final class Order
         };
     }
 
-    /** Statut colis (client / admin). */
+    public function isStorePickup(): bool
+    {
+        return ($this->shipping_method_code ?? '') === 'store_pickup';
+    }
+
+    /** Statut colis (client / admin) — libellé adapté au retrait boutique. */
     public function fulfillmentLabel(): string
     {
         return match ($this->fulfillment_status) {
             self::FULFILLMENT_PREPARING => 'En préparation',
-            self::FULFILLMENT_SHIPPED   => 'Envoyée',
+            self::FULFILLMENT_SHIPPED   => $this->isStorePickup() ? 'Retiré en boutique' : 'Envoyée',
             default                     => 'En attente',
         };
     }
@@ -155,7 +163,9 @@ final class Order
     {
         return match ($this->fulfillment_status) {
             self::FULFILLMENT_PREPARING => 'status-badge status-badge--preparing',
-            self::FULFILLMENT_SHIPPED   => 'status-badge status-badge--shipped',
+            self::FULFILLMENT_SHIPPED   => $this->isStorePickup()
+                ? 'status-badge status-badge--picked-up'
+                : 'status-badge status-badge--shipped',
             default                     => 'status-badge status-badge--awaiting',
         };
     }

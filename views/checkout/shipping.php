@@ -9,6 +9,7 @@ use App\Support\Money;
 
 $symbol = (string) ($shop['currency_symbol'] ?? '€');
 $selected = (string) ($selected ?? '');
+$storeAddress = trim((string) ($shop['store_address'] ?? ''));
 ?>
 <section class="admin-panel" style="max-width:40rem">
     <h1>Livraison</h1>
@@ -52,9 +53,14 @@ $selected = (string) ($selected ?? '');
                 $priceLabel = $quote->isFree()
                     ? 'Gratuit'
                     : Money::formatCents($quote->priceCents, $symbol);
-                $hint = $quote->estimatedDays !== null
-                    ? 'Délai estimé : ' . (int) $quote->estimatedDays . ' jour(s)'
-                    : ($quote->code === 'store_pickup' ? 'À retirer en magasin' : 'Livraison à domicile');
+                $isPickup = $quote->code === 'store_pickup';
+                if ($quote->estimatedDays !== null) {
+                    $hint = 'Délai estimé : ' . (int) $quote->estimatedDays . ' jour(s)';
+                } elseif ($isPickup) {
+                    $hint = 'Gratuit — à venir chercher en magasin';
+                } else {
+                    $hint = 'Livraison à domicile';
+                }
                 ?>
                 <label class="payment-method-option<?= $selected === $quote->code ? ' is-selected' : '' ?>"
                        for="<?= htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') ?>">
@@ -68,6 +74,12 @@ $selected = (string) ($selected ?? '');
                         <strong><?= htmlspecialchars($quote->label, ENT_QUOTES, 'UTF-8') ?>
                             — <?= htmlspecialchars($priceLabel, ENT_QUOTES, 'UTF-8') ?></strong>
                         <span><?= htmlspecialchars($hint, ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php if ($isPickup && $storeAddress !== ''): ?>
+                            <span class="shipping-pickup-hint">
+                                <span class="shipping-pickup-hint__label">Adresse du magasin</span>
+                                <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
+                            </span>
+                        <?php endif ?>
                     </span>
                 </label>
             <?php endforeach ?>
