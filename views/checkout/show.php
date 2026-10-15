@@ -11,7 +11,7 @@ $val = static fn (string $key): string => htmlspecialchars((string) ($old[$key] 
 $billingSame = ((string) ($old['billing_same_as_shipping'] ?? '1')) !== '0';
 ?>
 <section class="admin-panel" style="max-width:40rem">
-    <h1>Checkout</h1>
+    <h1><?= htmlspecialchars((string) ($title ?? 'Identification'), ENT_QUOTES, 'UTF-8') ?></h1>
     <?php
     $checkoutStep = 'identification';
     require dirname(__DIR__) . '/partials/checkout-steps.php';

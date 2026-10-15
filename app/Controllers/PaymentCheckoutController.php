@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Dao\OrderDao;
 use App\Models\Order;
+use App\Services\StripePaymentSyncService;
 use AstralPayment\PaymentService;
 use Controller\AbstractController;
 use Core\Auth\Auth;
@@ -28,6 +29,7 @@ final class PaymentCheckoutController extends AbstractController
         private Auth $auth,
         private OrderDao $orderDao,
         private PaymentService $paymentService,
+        private StripePaymentSyncService $stripeSync,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -124,7 +126,7 @@ final class PaymentCheckoutController extends AbstractController
                     return $this->redirect('/orders/' . $authorized->id);
                 }
 
-                // Webhook souvent à ~1 s : on attend brièvement puis on affiche la fiche avec auto-maj.
+                // Webhook souvent à ~1 s : on attend brièvement, puis sync API Stripe si besoin.
                 for ($i = 0; $i < 8; $i++) {
                     usleep(400_000); // 0,4 s
                     $fresh = $this->orderDao->findById($authorized->id);
@@ -133,6 +135,12 @@ final class PaymentCheckoutController extends AbstractController
                         $this->session->flash('success', 'Paiement confirmé. Merci pour votre commande !');
                         return $this->redirect('/orders/' . $fresh->id);
                     }
+                }
+
+                $synced = $this->stripeSync->confirmIfSucceeded($authorized);
+                if ($synced->isPaid()) {
+                    $this->session->flash('success', 'Paiement confirmé. Merci pour votre commande !');
+                    return $this->redirect('/orders/' . $synced->id);
                 }
 
                 $this->session->flash('success', 'Paiement accepté — confirmation en cours…');

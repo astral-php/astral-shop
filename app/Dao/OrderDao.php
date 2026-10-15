@@ -72,12 +72,16 @@ final class OrderDao extends AbstractDao
     /**
      * Toutes les commandes (admin), client joint.
      *
-     * @param ?string $paymentStatus     pending|paid|failed|refunded (colonne status)
-     * @param ?string $fulfillmentStatus awaiting|preparing|shipped
+     * @param ?string $paymentStatus       pending|paid|failed|refunded (colonne status)
+     * @param ?string $fulfillmentStatus   awaiting|preparing|shipped
+     * @param ?string $refundRequestStatus none|requested|accepted|rejected
      * @return list<Order>
      */
-    public function findAllWithUser(?string $paymentStatus = null, ?string $fulfillmentStatus = null): array
-    {
+    public function findAllWithUser(
+        ?string $paymentStatus = null,
+        ?string $fulfillmentStatus = null,
+        ?string $refundRequestStatus = null,
+    ): array {
         $sql = "SELECT o.*, u.name AS user_name, u.email AS user_email,
                        s.method_code AS shipping_method_code
                 FROM {$this->getTable()} o
@@ -99,6 +103,11 @@ final class OrderDao extends AbstractDao
             $params[':fulfillment_status'] = $fulfillmentStatus;
         }
 
+        if ($refundRequestStatus !== null && $refundRequestStatus !== '') {
+            $where[] = 'o.refund_request_status = :refund_request_status';
+            $params[':refund_request_status'] = $refundRequestStatus;
+        }
+
         if ($where !== []) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
@@ -107,6 +116,19 @@ final class OrderDao extends AbstractDao
 
         /** @var list<Order> */
         return $this->query($sql, $params);
+    }
+
+    /** Nombre de demandes client en attente (requested). */
+    public function countRefundRequestsPending(): int
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM {$this->getTable()}
+             WHERE refund_request_status = :status
+               AND status != 'cancelled'",
+        );
+        $stmt->execute([':status' => Order::REFUND_REQUEST_REQUESTED]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function findByIdWithUser(int $orderId): ?Order

@@ -17,7 +17,7 @@ $storeAddress = trim((string) ($shop['store_address'] ?? ''));
     $checkoutStep = 'livraison';
     require dirname(__DIR__) . '/partials/checkout-steps.php';
     ?>
-    <p class="admin-nav"><a href="/checkout">← Adresse</a></p>
+    <p class="admin-nav"><a href="/checkout">← Identification</a></p>
 
     <div class="cart-summary" style="margin-bottom:1.25rem">
         <p style="margin:0 0 0.75rem;font-weight:600">Articles</p>

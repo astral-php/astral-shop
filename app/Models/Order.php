@@ -57,11 +57,82 @@ final class Order
     /** Échéance paiement offline (virement / chèque), null pour carte. */
     public ?string $payment_due_at = null;
 
+    /** RIB client pour remboursement offline (virement sortant). */
+    public string $refund_iban = '';
+    public string $refund_bic = '';
+    public string $refund_holder = '';
+    public string $refund_reference = '';
+    public ?string $refunded_at = null;
+
+    /** Demande client (9.1d) — none | requested | accepted | rejected */
+    public const REFUND_REQUEST_NONE      = 'none';
+    public const REFUND_REQUEST_REQUESTED = 'requested';
+    public const REFUND_REQUEST_ACCEPTED  = 'accepted';
+    public const REFUND_REQUEST_REJECTED  = 'rejected';
+
+    public string $refund_request_status = self::REFUND_REQUEST_NONE;
+    public string $refund_request_reason = '';
+    public ?string $refund_request_at = null;
+    public string $refund_reject_reason = '';
+    public ?string $refund_rejected_at = null;
+    public ?string $refund_accepted_at = null;
+
     public string $created_at = '';
 
     public function isOfflinePayment(): bool
     {
         return in_array($this->payment_method, [self::PAYMENT_TRANSFER, self::PAYMENT_CHECK], true);
+    }
+
+    public function isRefunded(): bool
+    {
+        return $this->status === 'refunded';
+    }
+
+    public function hasRefundRib(): bool
+    {
+        return trim($this->refund_iban) !== '';
+    }
+
+    public function hasRefundRequestPending(): bool
+    {
+        return $this->refund_request_status === self::REFUND_REQUEST_REQUESTED;
+    }
+
+    public function hasRefundRequestAccepted(): bool
+    {
+        return $this->refund_request_status === self::REFUND_REQUEST_ACCEPTED;
+    }
+
+    public function hasRefundRequestRejected(): bool
+    {
+        return $this->refund_request_status === self::REFUND_REQUEST_REJECTED;
+    }
+
+    /**
+     * Le client peut ouvrir une demande (D1, D5) : payée, non remboursée,
+     * pas déjà en requested/accepted.
+     */
+    public function canRequestRefund(): bool
+    {
+        if (!$this->isPaid() || $this->isRefunded()) {
+            return false;
+        }
+
+        return !in_array($this->refund_request_status, [
+            self::REFUND_REQUEST_REQUESTED,
+            self::REFUND_REQUEST_ACCEPTED,
+        ], true);
+    }
+
+    public function refundRequestLabel(): string
+    {
+        return match ($this->refund_request_status) {
+            self::REFUND_REQUEST_REQUESTED => 'Demande en cours',
+            self::REFUND_REQUEST_ACCEPTED  => 'Demande acceptée',
+            self::REFUND_REQUEST_REJECTED  => 'Demande refusée',
+            default                        => '',
+        };
     }
 
     public function hasStockApplied(): bool

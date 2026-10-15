@@ -36,6 +36,13 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         <?php if ($order->paymentReference() !== null): ?>
             <span class="badge-muted">Réf. <?= htmlspecialchars($order->paymentReference(), ENT_QUOTES, 'UTF-8') ?></span>
         <?php endif ?>
+        <?php if ($order->refundRequestLabel() !== ''): ?>
+            <br>
+            <strong>Remboursement :</strong>
+            <span class="status-badge status-badge--pending">
+                <?= htmlspecialchars($order->refundRequestLabel(), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+        <?php endif ?>
         <br>
         <strong>Statut :</strong>
         <span id="order-status-badge" class="<?= htmlspecialchars($order->fulfillmentBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
@@ -138,6 +145,56 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
                     Voir les instructions de paiement
                 </a>
             <?php endif ?>
+        </div>
+    <?php endif ?>
+
+    <?php if ($order->hasRefundRequestPending()): ?>
+        <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
+            <h2 class="section-title" style="margin-top:0">Demande de remboursement</h2>
+            <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.9rem">
+                Votre demande est en cours d’examen
+                <?php if ($order->refund_request_at): ?>
+                    (déposée le <?= htmlspecialchars($order->refund_request_at, ENT_QUOTES, 'UTF-8') ?>)
+                <?php endif ?>.
+            </p>
+            <p style="margin:0;font-size:0.9rem">
+                <strong>Motif :</strong>
+                <?= htmlspecialchars($order->refund_request_reason, ENT_QUOTES, 'UTF-8') ?>
+            </p>
+        </div>
+    <?php elseif ($order->hasRefundRequestAccepted() && !$order->isRefunded()): ?>
+        <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
+            <h2 class="section-title" style="margin-top:0">Demande acceptée</h2>
+            <p style="margin:0;color:var(--muted);font-size:0.9rem">
+                Votre demande a été acceptée. Le remboursement est en cours de traitement.
+            </p>
+        </div>
+    <?php elseif ($order->hasRefundRequestRejected() && $order->canRequestRefund()): ?>
+        <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
+            <h2 class="section-title" style="margin-top:0">Demande refusée</h2>
+            <?php if (trim($order->refund_reject_reason) !== ''): ?>
+                <p style="margin:0 0 0.75rem;font-size:0.9rem">
+                    <strong>Motif :</strong>
+                    <?= htmlspecialchars($order->refund_reject_reason, ENT_QUOTES, 'UTF-8') ?>
+                </p>
+            <?php endif ?>
+            <p style="margin:0 0 1rem;color:var(--muted);font-size:0.9rem">
+                Vous pouvez déposer une nouvelle demande si besoin.
+            </p>
+            <?php require __DIR__ . '/_refund_request_form.php'; ?>
+        </div>
+    <?php elseif ($order->canRequestRefund()): ?>
+        <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
+            <h2 class="section-title" style="margin-top:0">Demander un remboursement</h2>
+            <p style="margin:0 0 1rem;color:var(--muted);font-size:0.9rem">
+                Remboursement du montant total de la commande.
+                <?php if ($order->isOfflinePayment()): ?>
+                    Indiquez votre RIB pour recevoir le virement.
+                <?php else: ?>
+                    Le crédit sera effectué sur la carte utilisée au paiement.
+                <?php endif ?>
+            </p>
+            <?php require __DIR__ . '/_refund_request_form.php'; ?>
         </div>
     <?php endif ?>
 </section>

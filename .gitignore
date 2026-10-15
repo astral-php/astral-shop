@@ -8,6 +8,9 @@
 !/storage/cache/.gitkeep
 /storage/invoices/*
 !/storage/invoices/.gitkeep
+/storage/backups/*
+!/storage/backups/.gitkeep
+!/storage/backups/README.txt
 /public/media/products/*
 !/public/media/products/.gitkeep
 /.phpunit.result.cache

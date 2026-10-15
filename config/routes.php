@@ -80,10 +80,11 @@ return function (Router $router): void {
             $r->get('/checkout/instructions/:id',  CheckoutController::class, 'instructions');
             $r->get('/checkout/change-payment/:id', CheckoutController::class, 'changePayment');
 
-            $r->get('/orders',             OrderController::class, 'index');
-            $r->get('/orders/:id/status',  OrderController::class, 'status');
-            $r->get('/orders/:id/invoice', OrderController::class, 'invoice');
-            $r->get('/orders/:id',         OrderController::class, 'show');
+            $r->get('/orders',                       OrderController::class, 'index');
+            $r->get('/orders/:id/status',            OrderController::class, 'status');
+            $r->get('/orders/:id/invoice',           OrderController::class, 'invoice');
+            $r->post('/orders/:id/request-refund',   OrderController::class, 'requestRefund');
+            $r->get('/orders/:id',                   OrderController::class, 'show');
 
             $r->get('/payment/checkout', PaymentCheckoutController::class, 'checkout');
             $r->get('/payment/success',  PaymentCheckoutController::class, 'success');
@@ -112,7 +113,11 @@ return function (Router $router): void {
             $r->post('/orders/:id/mark-paid',     AdminOrderController::class, 'markPaid');
             $r->post('/orders/:id/mark-preparing', AdminOrderController::class, 'markPreparing');
             $r->post('/orders/:id/mark-shipped',  AdminOrderController::class, 'markShipped');
-            $r->post('/orders/:id/delete',        AdminOrderController::class, 'destroy');
+            $r->post('/orders/:id/refund',                 AdminOrderController::class, 'refund');
+            $r->post('/orders/:id/mark-refunded',          AdminOrderController::class, 'markRefunded');
+            $r->post('/orders/:id/accept-refund-request',  AdminOrderController::class, 'acceptRefundRequest');
+            $r->post('/orders/:id/reject-refund-request',  AdminOrderController::class, 'rejectRefundRequest');
+            $r->post('/orders/:id/delete',                 AdminOrderController::class, 'destroy');
 
             $r->get('/categories',              AdminCategoryController::class, 'index');
             $r->get('/categories/create',       AdminCategoryController::class, 'create');

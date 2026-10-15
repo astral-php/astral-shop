@@ -28,8 +28,12 @@ use App\Services\CancelledOrderPurgeService;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use App\Services\OrderStockService;
+use App\Services\StripePaymentSyncService;
 use App\Events\OrderBecamePaid;
+use App\Events\OrderBecameRefunded;
 use App\Events\OrderShipped;
+use App\Events\RefundRequestRejected;
+use App\Events\RefundRequested;
 use App\Events\RoleChanged;
 use App\Events\UserLoggedIn;
 use App\Events\UserRegistered;
@@ -37,11 +41,17 @@ use App\Listeners\DecrementStockOnPaymentSucceeded;
 use App\Listeners\GenerateInvoiceOnPayment;
 use App\Listeners\LogRoleChange;
 use App\Listeners\LogUserActivity;
+use App\Listeners\NotifyAdminOnRefundRequested;
+use App\Listeners\RestockOnRefund;
 use App\Listeners\SendOrderConfirmationEmail;
 use App\Listeners\SendOrderShippedEmail;
+use App\Listeners\SendRefundConfirmationEmail;
+use App\Listeners\SendRefundRequestReceivedEmail;
+use App\Listeners\SendRefundRequestRejectedEmail;
 use App\Listeners\SendWelcomeEmail;
 use App\Services\InvoiceService;
 use App\Services\OrderFulfillmentService;
+use AstralPayment\Events\PaymentRefunded;
 use AstralPayment\Events\PaymentSucceeded;
 use AstralPayment\PaymentService;
 use AstralShipping\Dao\OrderShipmentDao;
@@ -80,6 +90,13 @@ final class AppServiceProvider implements ServiceProviderInterface
         $dispatcher->listen(OrderBecamePaid::class, GenerateInvoiceOnPayment::class);
         $dispatcher->listen(OrderBecamePaid::class, SendOrderConfirmationEmail::class);
         $dispatcher->listen(OrderShipped::class, SendOrderShippedEmail::class);
+        $dispatcher->listen(OrderBecameRefunded::class, RestockOnRefund::class);
+        $dispatcher->listen(OrderBecameRefunded::class, SendRefundConfirmationEmail::class);
+        $dispatcher->listen(PaymentRefunded::class, RestockOnRefund::class);
+        $dispatcher->listen(PaymentRefunded::class, SendRefundConfirmationEmail::class);
+        $dispatcher->listen(RefundRequested::class, NotifyAdminOnRefundRequested::class);
+        $dispatcher->listen(RefundRequested::class, SendRefundRequestReceivedEmail::class);
+        $dispatcher->listen(RefundRequestRejected::class, SendRefundRequestRejectedEmail::class);
 
         $container->singleton(OrderStockService::class, fn (Container $c) => new OrderStockService(
             pdo:          $c->make(\PDO::class),
@@ -134,9 +151,53 @@ final class AppServiceProvider implements ServiceProviderInterface
             appBaseUrl:  (string) ($appConfig['base_url'] ?? ''),
         ));
 
-        $container->singleton(OrderFulfillmentService::class, fn (Container $c) => new OrderFulfillmentService(
+        $container->bind(RestockOnRefund::class, fn (Container $c) => new RestockOnRefund(
+            stock:    $c->make(OrderStockService::class),
+            orderDao: $c->make(OrderDao::class),
+            logger:   $c->make(Logger::class),
+        ));
+
+        $container->bind(SendRefundConfirmationEmail::class, fn (Container $c) => new SendRefundConfirmationEmail(
+            mailer:     $c->make(Mailer::class),
             orderDao:   $c->make(OrderDao::class),
-            dispatcher: $c->make(EventDispatcher::class),
+            userDao:    $c->make(UserDao::class),
+            logger:     $c->make(Logger::class),
+            shop:       $shopConfig,
+            appBaseUrl: (string) ($appConfig['base_url'] ?? ''),
+        ));
+
+        $container->bind(NotifyAdminOnRefundRequested::class, fn (Container $c) => new NotifyAdminOnRefundRequested(
+            mailer:       $c->make(Mailer::class),
+            orderDao:     $c->make(OrderDao::class),
+            userDao:      $c->make(UserDao::class),
+            logger:       $c->make(Logger::class),
+            shop:         $shopConfig,
+            appBaseUrl:   (string) ($appConfig['base_url'] ?? ''),
+            notifyEmail:  (string) ($shopConfig['notify_email'] ?? ''),
+        ));
+
+        $container->bind(SendRefundRequestReceivedEmail::class, fn (Container $c) => new SendRefundRequestReceivedEmail(
+            mailer:     $c->make(Mailer::class),
+            orderDao:   $c->make(OrderDao::class),
+            userDao:    $c->make(UserDao::class),
+            logger:     $c->make(Logger::class),
+            shop:       $shopConfig,
+            appBaseUrl: (string) ($appConfig['base_url'] ?? ''),
+        ));
+
+        $container->bind(SendRefundRequestRejectedEmail::class, fn (Container $c) => new SendRefundRequestRejectedEmail(
+            mailer:     $c->make(Mailer::class),
+            orderDao:   $c->make(OrderDao::class),
+            userDao:    $c->make(UserDao::class),
+            logger:     $c->make(Logger::class),
+            shop:       $shopConfig,
+            appBaseUrl: (string) ($appConfig['base_url'] ?? ''),
+        ));
+
+        $container->singleton(OrderFulfillmentService::class, fn (Container $c) => new OrderFulfillmentService(
+            orderDao:        $c->make(OrderDao::class),
+            dispatcher:      $c->make(EventDispatcher::class),
+            paymentService:  $c->make(PaymentService::class),
         ));
 
         $container->singleton(UserDao::class, function (Container $c) use ($dbConfig): UserDao {
@@ -240,14 +301,24 @@ final class AppServiceProvider implements ServiceProviderInterface
             shop:            $shopConfig,
         ));
 
+        $container->singleton(StripePaymentSyncService::class, fn (Container $c) => new StripePaymentSyncService(
+            orderDao:       $c->make(OrderDao::class),
+            paymentService: $c->make(PaymentService::class),
+            dispatcher:     $c->make(EventDispatcher::class),
+            logger:         $c->make(Logger::class),
+        ));
+
         $container->bind(OrderController::class, fn (Container $c) => new OrderController(
             view:         $c->make(View::class),
             request:      $c->make(Request::class),
+            session:      $c->make(Session::class),
             auth:         $c->make(Auth::class),
             orderDao:     $c->make(OrderDao::class),
             orderItemDao: $c->make(OrderItemDao::class),
             shipmentDao:  $c->make(OrderShipmentDao::class),
             invoices:     $c->make(InvoiceService::class),
+            stripeSync:   $c->make(StripePaymentSyncService::class),
+            fulfillment:  $c->make(OrderFulfillmentService::class),
             shop:         $shopConfig,
         ));
 
@@ -258,6 +329,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             auth:           $c->make(Auth::class),
             orderDao:       $c->make(OrderDao::class),
             paymentService: $c->make(PaymentService::class),
+            stripeSync:     $c->make(StripePaymentSyncService::class),
             shop:           $shopConfig,
         ));
 

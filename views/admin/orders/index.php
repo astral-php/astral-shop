@@ -3,13 +3,17 @@
 /** @var array<string, mixed> $shop */
 /** @var string $filter_payment */
 /** @var string $filter_fulfillment */
+/** @var string $filter_refund_request */
 /** @var array<string, int> $payment_counts */
 /** @var array<string, int> $fulfillment_counts */
+/** @var int $refund_request_pending */
 $symbol = (string) ($shop['currency_symbol'] ?? '€');
 $filter_payment = (string) ($filter_payment ?? '');
 $filter_fulfillment = (string) ($filter_fulfillment ?? '');
+$filter_refund_request = (string) ($filter_refund_request ?? '');
 $payment_counts = $payment_counts ?? [];
 $fulfillment_counts = $fulfillment_counts ?? [];
+$refund_request_pending = (int) ($refund_request_pending ?? 0);
 
 $paymentFilters = [
     ''          => 'Actives',
@@ -26,13 +30,16 @@ $fulfillmentFilters = [
     'shipped'   => 'Envoyées / retirées',
 ];
 
-$buildUrl = static function (string $payment, string $fulfillment): string {
+$buildUrl = static function (string $payment, string $fulfillment, string $refundRequest = ''): string {
     $q = [];
     if ($payment !== '') {
         $q['payment'] = $payment;
     }
     if ($fulfillment !== '') {
         $q['fulfillment'] = $fulfillment;
+    }
+    if ($refundRequest !== '') {
+        $q['refund_request'] = $refundRequest;
     }
     return $q === [] ? '/admin/orders' : '/admin/orders?' . http_build_query($q);
 };
@@ -43,12 +50,24 @@ $buildUrl = static function (string $payment, string $fulfillment): string {
     </div>
 
     <div class="admin-filters">
+        <p class="admin-filters__label">Demandes remboursement</p>
+        <p class="cat-pills">
+            <a class="cat-pill<?= $filter_refund_request === '' ? ' is-active' : '' ?>"
+               href="<?= htmlspecialchars($buildUrl($filter_payment, $filter_fulfillment, ''), ENT_QUOTES, 'UTF-8') ?>">
+                Toutes
+            </a>
+            <a class="cat-pill<?= $filter_refund_request === 'requested' ? ' is-active' : '' ?>"
+               href="<?= htmlspecialchars($buildUrl($filter_payment, $filter_fulfillment, 'requested'), ENT_QUOTES, 'UTF-8') ?>">
+                En cours
+                <span class="cat-pill__count"><?= $refund_request_pending ?></span>
+            </a>
+        </p>
         <p class="admin-filters__label">Paiement</p>
         <p class="cat-pills">
             <?php foreach ($paymentFilters as $key => $label): ?>
                 <?php $count = (int) ($payment_counts[$key] ?? 0); ?>
                 <a class="cat-pill<?= $filter_payment === $key ? ' is-active' : '' ?>"
-                   href="<?= htmlspecialchars($buildUrl($key, $filter_fulfillment), ENT_QUOTES, 'UTF-8') ?>">
+                   href="<?= htmlspecialchars($buildUrl($key, $filter_fulfillment, $filter_refund_request), ENT_QUOTES, 'UTF-8') ?>">
                     <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
                     <span class="cat-pill__count"><?= $count ?></span>
                 </a>
@@ -59,7 +78,7 @@ $buildUrl = static function (string $payment, string $fulfillment): string {
             <?php foreach ($fulfillmentFilters as $key => $label): ?>
                 <?php $count = (int) ($fulfillment_counts[$key] ?? 0); ?>
                 <a class="cat-pill<?= $filter_fulfillment === $key ? ' is-active' : '' ?>"
-                   href="<?= htmlspecialchars($buildUrl($filter_payment, $key), ENT_QUOTES, 'UTF-8') ?>">
+                   href="<?= htmlspecialchars($buildUrl($filter_payment, $key, $filter_refund_request), ENT_QUOTES, 'UTF-8') ?>">
                     <?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>
                     <span class="cat-pill__count"><?= $count ?></span>
                 </a>
@@ -92,6 +111,12 @@ $buildUrl = static function (string $payment, string $fulfillment): string {
                             <span class="<?= htmlspecialchars($order->paymentStateBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
                                 <?= htmlspecialchars($order->paymentStateLabel(), ENT_QUOTES, 'UTF-8') ?>
                             </span>
+                            <?php if ($order->refundRequestLabel() !== ''): ?>
+                                <br>
+                                <span class="status-badge status-badge--pending" style="margin-top:0.25rem;display:inline-block">
+                                    <?= htmlspecialchars($order->refundRequestLabel(), ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            <?php endif ?>
                         </td>
                         <td>
                             <?= htmlspecialchars((string) ($order->user_name ?: $order->shipping_name), ENT_QUOTES, 'UTF-8') ?>

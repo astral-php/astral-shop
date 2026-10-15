@@ -31,9 +31,9 @@ use Core\View;
 final class CheckoutController extends AbstractController
 {
     private const SESSION_SHIPPING = 'checkout.shipping';
-    private const SESSION_BILLING  = 'checkout.billing';
-    private const SESSION_METHOD   = 'checkout.shipping_method';
-    private const SESSION_PENDING  = 'checkout.pending_order_id';
+    private const SESSION_BILLING = 'checkout.billing';
+    private const SESSION_METHOD = 'checkout.shipping_method';
+    private const SESSION_PENDING = 'checkout.pending_order_id';
 
     /** @param array<string, mixed> $shop */
     public function __construct(
@@ -61,12 +61,12 @@ final class CheckoutController extends AbstractController
         $old = array_merge($this->defaultAddressOld(), $this->sessionShipping(), $this->sessionBilling());
 
         return $this->render('checkout/show', [
-            'title'  => 'Checkout',
-            'shop'   => $this->shop,
-            'lines'  => $this->cart->lines(),
-            'total'  => $this->cart->totalCents(),
+            'title' => 'Identification',
+            'shop' => $this->shop,
+            'lines' => $this->cart->lines(),
+            'total' => $this->cart->totalCents(),
             'errors' => [],
-            'old'    => $old,
+            'old' => $old,
         ]);
     }
 
@@ -81,28 +81,28 @@ final class CheckoutController extends AbstractController
         $billingSame = $this->isCheckedFlag('billing_same_as_shipping', true);
 
         $shipping = [
-            'shipping_name'    => trim((string) $this->request->input('shipping_name', '')),
-            'shipping_line1'   => trim((string) $this->request->input('shipping_line1', '')),
-            'shipping_postal'    => trim((string) $this->request->input('shipping_postal', '')),
-            'shipping_city'    => trim((string) $this->request->input('shipping_city', '')),
+            'shipping_name' => trim((string) $this->request->input('shipping_name', '')),
+            'shipping_line1' => trim((string) $this->request->input('shipping_line1', '')),
+            'shipping_postal' => trim((string) $this->request->input('shipping_postal', '')),
+            'shipping_city' => trim((string) $this->request->input('shipping_city', '')),
             'shipping_country' => strtoupper(trim((string) $this->request->input('shipping_country', 'FR'))),
         ];
 
         if ($billingSame) {
             $billing = [
-                'billing_name'    => $shipping['shipping_name'],
-                'billing_line1'   => $shipping['shipping_line1'],
-                'billing_postal'    => $shipping['shipping_postal'],
-                'billing_city'    => $shipping['shipping_city'],
+                'billing_name' => $shipping['shipping_name'],
+                'billing_line1' => $shipping['shipping_line1'],
+                'billing_postal' => $shipping['shipping_postal'],
+                'billing_city' => $shipping['shipping_city'],
                 'billing_country' => $shipping['shipping_country'],
                 'billing_same_as_shipping' => '1',
             ];
         } else {
             $billing = [
-                'billing_name'    => trim((string) $this->request->input('billing_name', '')),
-                'billing_line1'   => trim((string) $this->request->input('billing_line1', '')),
-                'billing_postal'    => trim((string) $this->request->input('billing_postal', '')),
-                'billing_city'    => trim((string) $this->request->input('billing_city', '')),
+                'billing_name' => trim((string) $this->request->input('billing_name', '')),
+                'billing_line1' => trim((string) $this->request->input('billing_line1', '')),
+                'billing_postal' => trim((string) $this->request->input('billing_postal', '')),
+                'billing_city' => trim((string) $this->request->input('billing_city', '')),
                 'billing_country' => strtoupper(trim((string) $this->request->input('billing_country', 'FR'))),
                 'billing_same_as_shipping' => '0',
             ];
@@ -117,21 +117,21 @@ final class CheckoutController extends AbstractController
 
         if ($errors !== []) {
             return $this->render('checkout/show', [
-                'title'  => 'Checkout',
-                'shop'   => $this->shop,
-                'lines'  => $this->cart->lines(),
-                'total'  => $this->cart->totalCents(),
+                'title' => 'Identification',
+                'shop' => $this->shop,
+                'lines' => $this->cart->lines(),
+                'total' => $this->cart->totalCents(),
                 'errors' => $errors,
-                'old'    => $old,
+                'old' => $old,
             ]);
         }
 
         $this->session->set(self::SESSION_SHIPPING, $shipping);
         $this->session->set(self::SESSION_BILLING, [
-            'billing_name'    => $billing['billing_name'],
-            'billing_line1'   => $billing['billing_line1'],
-            'billing_postal'    => $billing['billing_postal'],
-            'billing_city'    => $billing['billing_city'],
+            'billing_name' => $billing['billing_name'],
+            'billing_line1' => $billing['billing_line1'],
+            'billing_postal' => $billing['billing_postal'],
+            'billing_city' => $billing['billing_city'],
             'billing_country' => $billing['billing_country'],
             'billing_same_as_shipping' => $billingSame ? '1' : '0',
         ]);
@@ -139,17 +139,17 @@ final class CheckoutController extends AbstractController
 
         if ($this->isCheckedFlag('save_to_profile', false)) {
             $this->userDao->updateAddresses((int) $this->auth->id(), [
-                'shipping_name'            => $shipping['shipping_name'],
-                'shipping_line1'           => $shipping['shipping_line1'],
-                'shipping_postal'            => $shipping['shipping_postal'],
-                'shipping_city'            => $shipping['shipping_city'],
-                'shipping_country'         => $shipping['shipping_country'],
+                'shipping_name' => $shipping['shipping_name'],
+                'shipping_line1' => $shipping['shipping_line1'],
+                'shipping_postal' => $shipping['shipping_postal'],
+                'shipping_city' => $shipping['shipping_city'],
+                'shipping_country' => $shipping['shipping_country'],
                 'billing_same_as_shipping' => $billingSame ? 1 : 0,
-                'billing_name'             => $billing['billing_name'],
-                'billing_line1'            => $billing['billing_line1'],
-                'billing_postal'             => $billing['billing_postal'],
-                'billing_city'             => $billing['billing_city'],
-                'billing_country'          => $billing['billing_country'],
+                'billing_name' => $billing['billing_name'],
+                'billing_line1' => $billing['billing_line1'],
+                'billing_postal' => $billing['billing_postal'],
+                'billing_city' => $billing['billing_city'],
+                'billing_country' => $billing['billing_country'],
             ]);
         }
 
@@ -171,7 +171,7 @@ final class CheckoutController extends AbstractController
         }
 
         $context = $this->shippingContext($address);
-        $quotes  = $this->shippingService->quotes($context);
+        $quotes = $this->shippingService->quotes($context);
 
         if ($quotes === []) {
             $this->session->flash('error', 'Aucune offre de livraison pour cette adresse.');
@@ -181,13 +181,13 @@ final class CheckoutController extends AbstractController
         $selected = (string) $this->session->get(self::SESSION_METHOD, $quotes[0]->code);
 
         return $this->render('checkout/shipping', [
-            'title'    => 'Livraison',
-            'shop'     => $this->shop,
-            'lines'    => $this->cart->lines(),
+            'title' => 'Livraison',
+            'shop' => $this->shop,
+            'lines' => $this->cart->lines(),
             'subtotal' => $context->subtotalCents,
-            'quotes'   => $quotes,
+            'quotes' => $quotes,
             'selected' => $selected,
-            'errors'   => [],
+            'errors' => [],
         ]);
     }
 
@@ -205,20 +205,20 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/checkout');
         }
 
-        $code    = trim((string) $this->request->input('shipping_method', ''));
+        $code = trim((string) $this->request->input('shipping_method', ''));
         $context = $this->shippingContext($address);
 
         try {
             $this->shippingService->select($context, $code);
         } catch (InvalidSelectionException $e) {
             return $this->render('checkout/shipping', [
-                'title'    => 'Livraison',
-                'shop'     => $this->shop,
-                'lines'    => $this->cart->lines(),
+                'title' => 'Livraison',
+                'shop' => $this->shop,
+                'lines' => $this->cart->lines(),
                 'subtotal' => $context->subtotalCents,
-                'quotes'   => $this->shippingService->quotes($context),
+                'quotes' => $this->shippingService->quotes($context),
                 'selected' => $code,
-                'errors'   => ['shipping_method' => [$e->getMessage()]],
+                'errors' => ['shipping_method' => [$e->getMessage()]],
             ]);
         }
 
@@ -252,16 +252,16 @@ final class CheckoutController extends AbstractController
         $subtotal = $this->cart->totalCents();
 
         return $this->render('checkout/payment', [
-            'title'    => 'Paiement',
-            'shop'     => $this->shop,
-            'lines'    => $this->cart->lines(),
+            'title' => 'Paiement',
+            'shop' => $this->shop,
+            'lines' => $this->cart->lines(),
             'subtotal' => $subtotal,
             'shipping' => $selection->quote->priceCents,
-            'total'    => $this->shippingService->total($subtotal, $selection),
-            'quote'    => $selection->quote,
-            'methods'  => $this->enabledMethods(),
-            'errors'   => [],
-            'old'      => [
+            'total' => $this->shippingService->total($subtotal, $selection),
+            'quote' => $selection->quote,
+            'methods' => $this->enabledMethods(),
+            'errors' => [],
+            'old' => [
                 'payment_method' => (string) $this->session->get('checkout.payment_method', Order::PAYMENT_CARD),
             ],
         ]);
@@ -290,23 +290,23 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/checkout/shipping');
         }
 
-        $method  = trim((string) $this->request->input('payment_method', ''));
+        $method = trim((string) $this->request->input('payment_method', ''));
         $enabled = $this->enabledMethods();
 
         if (!in_array($method, $enabled, true)) {
             $subtotal = $this->cart->totalCents();
 
             return $this->render('checkout/payment', [
-                'title'    => 'Paiement',
-                'shop'     => $this->shop,
-                'lines'    => $this->cart->lines(),
+                'title' => 'Paiement',
+                'shop' => $this->shop,
+                'lines' => $this->cart->lines(),
                 'subtotal' => $subtotal,
                 'shipping' => $selection->quote->priceCents,
-                'total'    => $this->shippingService->total($subtotal, $selection),
-                'quote'    => $selection->quote,
-                'methods'  => $enabled,
-                'errors'   => ['payment_method' => ['Choisissez un moyen de paiement.']],
-                'old'      => ['payment_method' => $method],
+                'total' => $this->shippingService->total($subtotal, $selection),
+                'quote' => $selection->quote,
+                'methods' => $enabled,
+                'errors' => ['payment_method' => ['Choisissez un moyen de paiement.']],
+                'old' => ['payment_method' => $method],
             ]);
         }
 
@@ -361,7 +361,7 @@ final class CheckoutController extends AbstractController
 
         return $this->render('checkout/instructions', [
             'title' => 'Commande confirmée #' . $order->id,
-            'shop'  => $this->shop,
+            'shop' => $this->shop,
             'order' => $order,
         ]);
     }
@@ -516,7 +516,7 @@ final class CheckoutController extends AbstractController
     private function resolveSelection(): ?ShippingSelection
     {
         $address = $this->sessionShipping();
-        $code    = trim((string) $this->session->get(self::SESSION_METHOD, ''));
+        $code = trim((string) $this->session->get(self::SESSION_METHOD, ''));
         if ($address === [] || $code === '') {
             return null;
         }
@@ -547,17 +547,17 @@ final class CheckoutController extends AbstractController
         /** @var User|null $user */
         if ($user === null) {
             return [
-                'shipping_name'            => $this->auth->name(),
-                'shipping_line1'           => '',
-                'shipping_postal'            => '',
-                'shipping_city'            => '',
-                'shipping_country'         => 'FR',
+                'shipping_name' => $this->auth->name(),
+                'shipping_line1' => '',
+                'shipping_postal' => '',
+                'shipping_city' => '',
+                'shipping_country' => 'FR',
                 'billing_same_as_shipping' => '1',
-                'billing_name'             => '',
-                'billing_line1'            => '',
-                'billing_postal'             => '',
-                'billing_city'             => '',
-                'billing_country'          => 'FR',
+                'billing_name' => '',
+                'billing_line1' => '',
+                'billing_postal' => '',
+                'billing_city' => '',
+                'billing_country' => 'FR',
             ];
         }
 
@@ -601,19 +601,19 @@ final class CheckoutController extends AbstractController
 
         if ($same || trim((string) ($billing['billing_line1'] ?? '')) === '') {
             return [
-                'billing_name'    => $shipping['shipping_name'],
-                'billing_line1'   => $shipping['shipping_line1'],
-                'billing_postal'    => $shipping['shipping_postal'],
-                'billing_city'    => $shipping['shipping_city'],
+                'billing_name' => $shipping['shipping_name'],
+                'billing_line1' => $shipping['shipping_line1'],
+                'billing_postal' => $shipping['shipping_postal'],
+                'billing_city' => $shipping['shipping_city'],
                 'billing_country' => $shipping['shipping_country'],
             ];
         }
 
         return [
-            'billing_name'    => (string) ($billing['billing_name'] ?? ''),
-            'billing_line1'   => (string) ($billing['billing_line1'] ?? ''),
-            'billing_postal'    => (string) ($billing['billing_postal'] ?? ''),
-            'billing_city'    => (string) ($billing['billing_city'] ?? ''),
+            'billing_name' => (string) ($billing['billing_name'] ?? ''),
+            'billing_line1' => (string) ($billing['billing_line1'] ?? ''),
+            'billing_postal' => (string) ($billing['billing_postal'] ?? ''),
+            'billing_city' => (string) ($billing['billing_city'] ?? ''),
             'billing_country' => (string) ($billing['billing_country'] ?? 'FR'),
         ];
     }
@@ -631,16 +631,16 @@ final class CheckoutController extends AbstractController
         $countryKey = $prefix . '_country';
 
         $v = $this->validate([
-            $nameKey    => $data[$nameKey] ?? '',
-            $lineKey    => $data[$lineKey] ?? '',
-            $postalKey   => $data[$postalKey] ?? '',
-            $cityKey    => $data[$cityKey] ?? '',
+            $nameKey => $data[$nameKey] ?? '',
+            $lineKey => $data[$lineKey] ?? '',
+            $postalKey => $data[$postalKey] ?? '',
+            $cityKey => $data[$cityKey] ?? '',
             $countryKey => $data[$countryKey] ?? '',
         ], [
-            $nameKey    => 'required|min:2|max:150',
-            $lineKey    => 'required|min:3|max:255',
-            $postalKey   => 'required',
-            $cityKey    => 'required|min:2|max:100',
+            $nameKey => 'required|min:2|max:150',
+            $lineKey => 'required|min:3|max:255',
+            $postalKey => 'required',
+            $cityKey => 'required|min:2|max:100',
             $countryKey => 'required|min:2|max:2',
         ]);
 

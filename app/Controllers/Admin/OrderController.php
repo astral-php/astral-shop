@@ -55,17 +55,34 @@ final class OrderController extends AdminController
             $fulfillment = '';
         }
 
+        $refundRequest = trim((string) $this->request->query('refund_request', ''));
+        $allowedRefundRequest = [
+            Order::REFUND_REQUEST_REQUESTED,
+            Order::REFUND_REQUEST_ACCEPTED,
+            Order::REFUND_REQUEST_REJECTED,
+        ];
+        if ($refundRequest !== '' && !in_array($refundRequest, $allowedRefundRequest, true)) {
+            $refundRequest = '';
+        }
+
         $paymentFilter = $payment !== '' ? $payment : null;
         $fulfillmentFilter = $fulfillment !== '' ? $fulfillment : null;
+        $refundRequestFilter = $refundRequest !== '' ? $refundRequest : null;
 
         return $this->render('admin/orders/index', [
-            'title'              => 'Commandes',
-            'shop'               => $this->shop,
-            'orders'             => $this->orderDao->findAllWithUser($paymentFilter, $fulfillmentFilter),
-            'filter_payment'     => $payment,
-            'filter_fulfillment' => $fulfillment,
-            'payment_counts'     => $this->orderDao->countGroupedByPayment($fulfillmentFilter),
-            'fulfillment_counts' => $this->orderDao->countGroupedByFulfillment($paymentFilter),
+            'title'                   => 'Commandes',
+            'shop'                    => $this->shop,
+            'orders'                  => $this->orderDao->findAllWithUser(
+                $paymentFilter,
+                $fulfillmentFilter,
+                $refundRequestFilter,
+            ),
+            'filter_payment'          => $payment,
+            'filter_fulfillment'      => $fulfillment,
+            'filter_refund_request'   => $refundRequest,
+            'payment_counts'          => $this->orderDao->countGroupedByPayment($fulfillmentFilter),
+            'fulfillment_counts'      => $this->orderDao->countGroupedByFulfillment($paymentFilter),
+            'refund_request_pending'  => $this->orderDao->countRefundRequestsPending(),
         ]);
     }
 
@@ -109,6 +126,57 @@ final class OrderController extends AdminController
             : 'Commande marquée comme envoyée — e-mail client envoyé.';
 
         return $this->runTransition((int) $id, fn (int $oid) => $this->fulfillment->markShipped($oid), $msg);
+    }
+
+    public function refund(string $id): Response
+    {
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->refundCard($oid),
+            'Remboursement Stripe initié — commande marquée remboursée, stock rétabli, e-mail envoyé.',
+        );
+    }
+
+    public function markRefunded(string $id): Response
+    {
+        $rib = [
+            'iban'      => (string) $this->request->input('refund_iban', ''),
+            'bic'       => (string) $this->request->input('refund_bic', ''),
+            'holder'    => (string) $this->request->input('refund_holder', ''),
+            'reference' => (string) $this->request->input('refund_reference', ''),
+        ];
+
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->markRefundedOffline($oid, $rib),
+            'Commande marquée remboursée — stock rétabli, e-mail envoyé.',
+        );
+    }
+
+    public function acceptRefundRequest(string $id): Response
+    {
+        $order = $this->orderDao->findById((int) $id);
+        $isCard = $order instanceof Order && $order->payment_method === Order::PAYMENT_CARD;
+        $msg = $isCard
+            ? 'Demande acceptée — remboursement Stripe effectué, stock rétabli, e-mail envoyé.'
+            : 'Demande acceptée — effectuez le virement sortant puis marquez la commande remboursée.';
+
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->acceptRefundRequest($oid),
+            $msg,
+        );
+    }
+
+    public function rejectRefundRequest(string $id): Response
+    {
+        $reason = (string) $this->request->input('refund_reject_reason', '');
+
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->rejectRefundRequest($oid, $reason),
+            'Demande de remboursement refusée — e-mail envoyé au client.',
+        );
     }
 
     public function destroy(string $id): Response
