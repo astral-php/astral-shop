@@ -63,16 +63,16 @@
         },
         {
             "name": "astral-php/astral-payment",
-            "version": "0.1.2",
+            "version": "0.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-payment.git",
-                "reference": "e51a6cc80f2cd4469fbdbd2cf421daac1dc84944"
+                "reference": "545484b100cb8c34a894b9c7bc32a7f0941a0b28"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-payment/zipball/e51a6cc80f2cd4469fbdbd2cf421daac1dc84944",
-                "reference": "e51a6cc80f2cd4469fbdbd2cf421daac1dc84944",
+                "url": "https://api.github.com/repos/astral-php/astral-payment/zipball/545484b100cb8c34a894b9c7bc32a7f0941a0b28",
+                "reference": "545484b100cb8c34a894b9c7bc32a7f0941a0b28",
                 "shasum": ""
             },
             "require": {
@@ -117,7 +117,7 @@
                 "issues": "https://github.com/astral-php/astral-payment/issues",
                 "source": "https://github.com/astral-php/astral-payment"
             },
-            "time": "2026-10-08T15:52:34+00:00"
+            "time": "2026-10-15T13:58:46+00:00"
         },
         {
             "name": "astral-php/astral-shipping",
