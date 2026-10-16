@@ -3,10 +3,10 @@
 Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php) — catalogue, panier, checkout, Stripe, frais de port, facture PDF, remboursements et retours colis.
 
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Version 1.0.0** — moteur boutique prêt (gate métier + légale).  
+> **Version 1.0.1** — moteur boutique prêt (gate métier + légale).  
 > **Ouvrir une boutique** reste à la charge du marchand : identité, textes, paiements, port, exploitation.  
 > → Documentation : **[docs/README.md](./docs/README.md)** · guides dans [`docs/Installation/`](./docs/Installation/)
 
@@ -113,7 +113,7 @@ php bin/console orders:expire-offline
 
 ## Roadmap
 
-- **1.0.0** — livré (gate métier + légale + shipping MVP)  
+- **1.0.0 / 1.0.1** — livré (gate métier + légale + shipping MVP) ; 1.0.1 sans pointeur interne  
 - **1.1.0** — Colissimo / Mondial Relay / Sendcloud ; légal en BD  
 - **1.5.0** — Optimisation (worker + cache)
 
