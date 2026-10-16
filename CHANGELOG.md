@@ -32,5 +32,8 @@ et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 ### Ajouté
 - Guides install dans le dépôt : `docs/Installation/` + index unique `docs/README.md` (liens depuis le README principal).
 
+### Retiré
+- Pointeur racine `astral-shop.md` (infos → `astral-informations/astral-shop/` uniquement ; hors dépôt Packagist).
+
 ### Notes
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.

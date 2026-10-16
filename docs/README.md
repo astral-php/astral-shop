@@ -24,4 +24,3 @@ Travail interne Astral (pas requis pour installer) :
 | Roadmap + versions | `Roadmap/astral-shop.md` |
 | Campagne QA | `Roadmap/test.md` |
 | Optimisation (1.5) | `Features/Optimisation/` |
-| Miroir guides (aligner avec ce dossier) | `Features/Installation/` |
