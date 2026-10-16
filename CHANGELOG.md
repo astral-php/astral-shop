@@ -10,6 +10,11 @@ et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 ### Notes
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.
 
+## [1.0.2] — 2026-10-16
+
+### Corrigé
+- Encodage UTF-8 de `.env.example` (chaînes FR hero / commentaires) cassé par un rewrite PowerShell dans 1.0.1.
+
 ## [1.0.1] — 2026-10-16
 
 ### Retiré
