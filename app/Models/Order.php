@@ -77,6 +77,21 @@ final class Order
     public ?string $refund_rejected_at = null;
     public ?string $refund_accepted_at = null;
 
+    /**
+     * Retour colis (§10.12 / G2) — none | pending | received | waived | expired
+     */
+    public const RETURN_NONE     = 'none';
+    public const RETURN_PENDING  = 'pending';
+    public const RETURN_RECEIVED = 'received';
+    public const RETURN_WAIVED   = 'waived';
+    public const RETURN_EXPIRED  = 'expired';
+
+    public string $return_status = self::RETURN_NONE;
+    public ?string $return_due_at = null;
+    public ?string $returned_at = null;
+    /** Ancre délai L2 (expédition / retrait). */
+    public ?string $shipped_at = null;
+
     public string $created_at = '';
 
     public function isOfflinePayment(): bool
@@ -132,6 +147,57 @@ final class Order
             self::REFUND_REQUEST_ACCEPTED  => 'Demande acceptée',
             self::REFUND_REQUEST_REJECTED  => 'Demande refusée',
             default                        => '',
+        };
+    }
+
+    public function isReturnPending(): bool
+    {
+        return $this->return_status === self::RETURN_PENDING;
+    }
+
+    public function isReturnReceived(): bool
+    {
+        return $this->return_status === self::RETURN_RECEIVED;
+    }
+
+    public function isReturnWaived(): bool
+    {
+        return $this->return_status === self::RETURN_WAIVED;
+    }
+
+    public function isReturnExpired(): bool
+    {
+        return $this->return_status === self::RETURN_EXPIRED;
+    }
+
+    /** Colis déjà expédié / retiré — un retour physique peut être exigé. */
+    public function wasShippedOrPickedUp(): bool
+    {
+        return $this->fulfillment_status === self::FULFILLMENT_SHIPPED;
+    }
+
+    /**
+     * Retour satisfait pour enchaîner le remboursement (L3/L5) :
+     * reçu / dispensé, ou aucun process retour ouvert (`none` = pas de demande).
+     * Le process `pending` n’existe qu’après une demande client sur commande expédiée.
+     */
+    public function isReturnSatisfiedForRefund(): bool
+    {
+        return in_array($this->return_status, [
+            self::RETURN_NONE,
+            self::RETURN_RECEIVED,
+            self::RETURN_WAIVED,
+        ], true);
+    }
+
+    public function returnStatusLabel(): string
+    {
+        return match ($this->return_status) {
+            self::RETURN_PENDING  => 'Retour en attente',
+            self::RETURN_RECEIVED => 'Retour reçu',
+            self::RETURN_WAIVED   => 'Retour non requis',
+            self::RETURN_EXPIRED  => 'Délai de retour dépassé',
+            default               => '',
         };
     }
 

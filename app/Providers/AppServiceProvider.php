@@ -14,6 +14,7 @@ use App\Controllers\CatalogController;
 use App\Controllers\CheckoutController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallController;
+use App\Controllers\LegalController;
 use App\Controllers\OrderController;
 use App\Controllers\PaymentCheckoutController;
 use App\Controllers\ProfileController;
@@ -198,6 +199,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             orderDao:        $c->make(OrderDao::class),
             dispatcher:      $c->make(EventDispatcher::class),
             paymentService:  $c->make(PaymentService::class),
+            returnDays:      max(1, (int) (($shopConfig['legal']['return_days'] ?? 14))),
         ));
 
         $container->singleton(UserDao::class, function (Container $c) use ($dbConfig): UserDao {
@@ -271,6 +273,11 @@ final class AppServiceProvider implements ServiceProviderInterface
             userDao:    $c->make(UserDao::class),
             productDao: $c->make(ProductDao::class),
             shop:       $shopConfig,
+        ));
+
+        $container->bind(LegalController::class, fn (Container $c) => new LegalController(
+            view: $c->make(View::class),
+            shop: $shopConfig,
         ));
 
         $container->bind(CatalogController::class, fn (Container $c) => new CatalogController(

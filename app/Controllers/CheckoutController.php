@@ -292,8 +292,17 @@ final class CheckoutController extends AbstractController
 
         $method = trim((string) $this->request->input('payment_method', ''));
         $enabled = $this->enabledMethods();
+        $acceptCgv = $this->isCheckedFlag('accept_cgv', false);
 
+        $paymentErrors = [];
         if (!in_array($method, $enabled, true)) {
+            $paymentErrors['payment_method'] = ['Choisissez un moyen de paiement.'];
+        }
+        if (!$acceptCgv) {
+            $paymentErrors['accept_cgv'] = ['Vous devez accepter les conditions générales de vente pour continuer.'];
+        }
+
+        if ($paymentErrors !== []) {
             $subtotal = $this->cart->totalCents();
 
             return $this->render('checkout/payment', [
@@ -305,8 +314,11 @@ final class CheckoutController extends AbstractController
                 'total' => $this->shippingService->total($subtotal, $selection),
                 'quote' => $selection->quote,
                 'methods' => $enabled,
-                'errors' => ['payment_method' => ['Choisissez un moyen de paiement.']],
-                'old' => ['payment_method' => $method],
+                'errors' => $paymentErrors,
+                'old' => [
+                    'payment_method' => $method,
+                    'accept_cgv'     => $acceptCgv ? '1' : '',
+                ],
             ]);
         }
 

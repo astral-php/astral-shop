@@ -110,12 +110,18 @@ final class OrderController extends AbstractController
             return $this->redirect('/orders/' . $orderId);
         }
 
-        $this->session->flash(
-            'success',
-            'Votre demande de remboursement a bien été enregistrée. Nous vous recontactons rapidement.',
-        );
+        $fresh = $result['order'];
+        $msg = 'Votre demande de remboursement a bien été enregistrée.';
+        if ($fresh->isReturnPending()) {
+            $msg .= ' Merci de renvoyer le colis selon les consignes affichées sur cette page — le remboursement suivra sa réception.';
+        } elseif ($fresh->isReturnWaived()) {
+            $msg .= ' Aucun renvoi de colis n’est requis pour cette demande.';
+        } else {
+            $msg .= ' Nous vous recontactons rapidement.';
+        }
+        $this->session->flash('success', $msg);
 
-        return $this->redirect('/orders/' . $result['order']->id);
+        return $this->redirect('/orders/' . $fresh->id);
     }
 
     /** GET /orders/:id/invoice — téléchargement facture PDF. */

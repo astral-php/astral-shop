@@ -7,6 +7,14 @@
 $symbol = (string) ($shop['currency_symbol'] ?? '€');
 $confirming = !empty($confirming);
 $shipment = is_array($shipment ?? null) ? $shipment : null;
+$storeName = (string) ($shop['store_name'] ?? 'Boutique');
+$isPickup = $order->isStorePickup()
+    || (($shipment['method_code'] ?? '') === 'store_pickup')
+    || (($shipment['carrier'] ?? '') === 'store');
+if ($isPickup && ($order->shipping_method_code === null || $order->shipping_method_code === '')) {
+    $order->shipping_method_code = 'store_pickup';
+}
+$storeAddress = trim((string) ($shop['store_address'] ?? ''));
 ?>
 <section class="admin-panel">
     <div class="admin-panel__head">
@@ -25,7 +33,7 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         </p>
     <?php endif ?>
 
-    <p>
+    <p style="margin:0 0 1rem">
         <strong>Date :</strong>
         <?= htmlspecialchars($order->created_at, ENT_QUOTES, 'UTF-8') ?><br>
         <strong>Paiement :</strong>
@@ -43,18 +51,18 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
                 <?= htmlspecialchars($order->refundRequestLabel(), ENT_QUOTES, 'UTF-8') ?>
             </span>
         <?php endif ?>
+        <?php if ($order->returnStatusLabel() !== ''): ?>
+            <br>
+            <strong>Retour :</strong>
+            <span class="status-badge <?= $order->isReturnPending() ? 'status-badge--pending' : ($order->isReturnReceived() || $order->isReturnWaived() ? 'status-badge--shipped' : 'status-badge--failed') ?>">
+                <?= htmlspecialchars($order->returnStatusLabel(), ENT_QUOTES, 'UTF-8') ?>
+            </span>
+        <?php endif ?>
         <br>
         <strong>Statut :</strong>
         <span id="order-status-badge" class="<?= htmlspecialchars($order->fulfillmentBadgeClass(), ENT_QUOTES, 'UTF-8') ?>">
             <?= htmlspecialchars($order->fulfillmentLabel(), ENT_QUOTES, 'UTF-8') ?>
-        </span><br>
-        <strong>Sous-total TTC :</strong> <?= htmlspecialchars($order->subtotalLabel($symbol), ENT_QUOTES, 'UTF-8') ?><br>
-        <strong>Livraison :</strong> <?= htmlspecialchars($order->shippingLabel($symbol), ENT_QUOTES, 'UTF-8') ?>
-        <?php if ($shipment !== null): ?>
-            <span class="badge-muted"><?= htmlspecialchars((string) ($shipment['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span>
-        <?php endif ?>
-        <br>
-        <strong>Total TTC :</strong> <?= htmlspecialchars($order->totalLabel($symbol), ENT_QUOTES, 'UTF-8') ?>
+        </span>
     </p>
 
     <?php if ($order->isPaid()): ?>
@@ -64,67 +72,99 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         </p>
     <?php endif ?>
 
-    <?php
-    $isPickup = $order->isStorePickup()
-        || (($shipment['method_code'] ?? '') === 'store_pickup')
-        || (($shipment['carrier'] ?? '') === 'store');
-    if ($isPickup && ($order->shipping_method_code === null || $order->shipping_method_code === '')) {
-        $order->shipping_method_code = 'store_pickup';
-    }
-    $storeAddress = trim((string) ($shop['store_address'] ?? ''));
-    ?>
-    <h2 class="section-title"><?= $isPickup ? 'Retrait' : 'Livraison' ?></h2>
-    <p style="color:var(--muted);line-height:1.5">
-        <?php if ($shipment !== null): ?>
-            <strong style="color:var(--text)"><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
-        <?php endif ?>
-        <?php if ($isPickup && $storeAddress !== ''): ?>
-            <span class="shipping-pickup-hint" style="margin:0.55rem 0 0.75rem;display:inline-block;max-width:28rem">
-                <span class="shipping-pickup-hint__label">Adresse du magasin</span>
-                <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
-            </span><br>
-        <?php endif ?>
-        <?= htmlspecialchars($order->shipping_name, ENT_QUOTES, 'UTF-8') ?><br>
-        <?= htmlspecialchars($order->shipping_line1, ENT_QUOTES, 'UTF-8') ?><br>
-        <?= htmlspecialchars($order->shipping_postal . ' ' . $order->shipping_city, ENT_QUOTES, 'UTF-8') ?><br>
-        <?= htmlspecialchars($order->shipping_country, ENT_QUOTES, 'UTF-8') ?>
-    </p>
+    <article class="order-invoice-sheet order-invoice-sheet--client">
+        <header class="order-invoice-sheet__header">
+            <div>
+                <p class="order-invoice-sheet__eyebrow">Votre commande</p>
+                <h2 class="order-invoice-sheet__title"><?= htmlspecialchars($storeName, ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+            <div class="order-invoice-sheet__meta">
+                <strong>CMD-<?= (int) $order->id ?></strong>
+                <span><?= htmlspecialchars($order->created_at, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php if ($order->hasInvoice()): ?>
+                    <a href="/orders/<?= (int) $order->id ?>/invoice">Télécharger le PDF</a>
+                <?php endif ?>
+            </div>
+        </header>
 
-    <h2 class="section-title">Facturation</h2>
-    <p style="color:var(--muted);line-height:1.5">
-        <?php if ($order->billingSameAsShippingSnapshot()): ?>
-            Identique à la livraison
-        <?php else: ?>
-            <?= htmlspecialchars($order->billingName(), ENT_QUOTES, 'UTF-8') ?><br>
-            <?= htmlspecialchars($order->billingLine1(), ENT_QUOTES, 'UTF-8') ?><br>
-            <?= htmlspecialchars($order->billingPostal() . ' ' . $order->billingCity(), ENT_QUOTES, 'UTF-8') ?><br>
-            <?= htmlspecialchars($order->billingCountry(), ENT_QUOTES, 'UTF-8') ?>
-        <?php endif ?>
-    </p>
+        <div class="order-invoice-sheet__parties order-invoice-sheet__parties--client">
+            <div>
+                <h3 class="order-invoice-sheet__label">Facturation</h3>
+                <p class="order-invoice-sheet__text">
+                    <?php if ($order->billingSameAsShippingSnapshot()): ?>
+                        <?= htmlspecialchars($order->billingName(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingLine1(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingPostal() . ' ' . $order->billingCity(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingCountry(), ENT_QUOTES, 'UTF-8') ?>
+                        <br><span class="order-invoice-sheet__muted">Identique à la livraison</span>
+                    <?php else: ?>
+                        <?= htmlspecialchars($order->billingName(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingLine1(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingPostal() . ' ' . $order->billingCity(), ENT_QUOTES, 'UTF-8') ?><br>
+                        <?= htmlspecialchars($order->billingCountry(), ENT_QUOTES, 'UTF-8') ?>
+                    <?php endif ?>
+                </p>
+            </div>
+            <div class="order-invoice-sheet__ship">
+                <h3 class="order-invoice-sheet__label"><?= $isPickup ? 'Retrait' : 'Livraison' ?></h3>
+                <p class="order-invoice-sheet__text">
+                    <?php if ($shipment !== null): ?>
+                        <strong><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
+                    <?php endif ?>
+                    <?php if ($isPickup && $storeAddress !== ''): ?>
+                        <span class="shipping-pickup-hint" style="margin:0.35rem 0 0.55rem;display:inline-block;max-width:100%">
+                            <span class="shipping-pickup-hint__label">Adresse du magasin</span>
+                            <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?>
+                        </span><br>
+                    <?php endif ?>
+                    <?= htmlspecialchars($order->shipping_name, ENT_QUOTES, 'UTF-8') ?><br>
+                    <?= htmlspecialchars($order->shipping_line1, ENT_QUOTES, 'UTF-8') ?><br>
+                    <?= htmlspecialchars($order->shipping_postal . ' ' . $order->shipping_city, ENT_QUOTES, 'UTF-8') ?><br>
+                    <?= htmlspecialchars($order->shipping_country, ENT_QUOTES, 'UTF-8') ?>
+                </p>
+            </div>
+        </div>
 
-    <h2 class="section-title">Articles</h2>
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Prix TTC</th>
-                    <th>Qté</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($items as $item): ?>
-                <tr>
-                    <td><?= htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= htmlspecialchars($item->unitLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
-                    <td><?= (int) $item->quantity ?></td>
-                    <td><?= htmlspecialchars($item->lineLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
-                </tr>
-            <?php endforeach ?>
-            </tbody>
-        </table>
-    </div>
+        <div class="order-invoice-sheet__lines">
+            <table class="order-invoice-sheet__table">
+                <thead>
+                    <tr>
+                        <th>Désignation</th>
+                        <th class="order-invoice-sheet__num">Prix TTC</th>
+                        <th class="order-invoice-sheet__num">Qté</th>
+                        <th class="order-invoice-sheet__num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($items as $item): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($item->product_name, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td class="order-invoice-sheet__num"><?= htmlspecialchars($item->unitLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td class="order-invoice-sheet__num"><?= (int) $item->quantity ?></td>
+                        <td class="order-invoice-sheet__num"><?= htmlspecialchars($item->lineLabel($symbol), ENT_QUOTES, 'UTF-8') ?></td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+
+        <footer class="order-invoice-sheet__totals">
+            <div class="order-invoice-sheet__totals-rows">
+                <div>
+                    <span>Sous-total TTC</span>
+                    <strong><?= htmlspecialchars($order->subtotalLabel($symbol), ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+                <div>
+                    <span>Livraison</span>
+                    <strong><?= htmlspecialchars($order->shippingLabel($symbol), ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+                <div class="order-invoice-sheet__totals-grand">
+                    <span>Total TTC</span>
+                    <strong><?= htmlspecialchars($order->totalLabel($symbol), ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+            </div>
+        </footer>
+    </article>
 
     <?php if ($order->isOpen()): ?>
         <div id="order-pay-cta" style="margin-top:1.25rem<?= $confirming && $order->isPending() ? ';display:none' : '' ?>">
@@ -148,7 +188,8 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
         </div>
     <?php endif ?>
 
-    <?php if ($order->hasRefundRequestPending()): ?>
+    <?php if ($order->hasRefundRequestPending() || $order->isReturnPending() || $order->isReturnReceived() || $order->isReturnWaived() || $order->isReturnExpired()): ?>
+        <?php if ($order->hasRefundRequestPending()): ?>
         <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
             <h2 class="section-title" style="margin-top:0">Demande de remboursement</h2>
             <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.9rem">
@@ -156,13 +197,20 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
                 <?php if ($order->refund_request_at): ?>
                     (déposée le <?= htmlspecialchars($order->refund_request_at, ENT_QUOTES, 'UTF-8') ?>)
                 <?php endif ?>.
+                <?php if ($order->isReturnPending()): ?>
+                    Renvoyez le colis selon les consignes ci-dessous — le remboursement intervient après réception.
+                <?php endif ?>
             </p>
             <p style="margin:0;font-size:0.9rem">
                 <strong>Motif :</strong>
                 <?= htmlspecialchars($order->refund_request_reason, ENT_QUOTES, 'UTF-8') ?>
             </p>
         </div>
-    <?php elseif ($order->hasRefundRequestAccepted() && !$order->isRefunded()): ?>
+        <?php endif ?>
+        <?php require __DIR__ . '/_return_panel.php'; ?>
+    <?php endif ?>
+
+    <?php if ($order->hasRefundRequestAccepted() && !$order->isRefunded()): ?>
         <div class="order-refund-request" style="margin-top:1.5rem;padding:1rem 1.15rem;border:1px solid var(--line,#e2e8f0);border-radius:0.85rem">
             <h2 class="section-title" style="margin-top:0">Demande acceptée</h2>
             <p style="margin:0;color:var(--muted);font-size:0.9rem">
@@ -188,6 +236,10 @@ $shipment = is_array($shipment ?? null) ? $shipment : null;
             <h2 class="section-title" style="margin-top:0">Demander un remboursement</h2>
             <p style="margin:0 0 1rem;color:var(--muted);font-size:0.9rem">
                 Remboursement du montant total de la commande.
+                <?php if ($order->wasShippedOrPickedUp()): ?>
+                    Si le colis a été reçu, un retour sera demandé avant remboursement
+                    (<a href="/retours">politique de retour</a>).
+                <?php endif ?>
                 <?php if ($order->isOfflinePayment()): ?>
                     Indiquez votre RIB pour recevoir le virement.
                 <?php else: ?>

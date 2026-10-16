@@ -114,6 +114,26 @@ $submitLabel = $submitLabels[$selected] ?? 'Confirmer';
             <?php endif ?>
         </p>
 
+        <div class="field checkout-legal" style="margin-top:1.15rem">
+            <p class="checkout-legal__hint">Consulter avant de valider</p>
+            <div class="checkout-legal__badges">
+                <a class="checkout-legal__badge" href="/cgv" target="_blank" rel="noopener"
+                   title="Conditions générales de vente">Conditions générales de vente</a>
+                <a class="checkout-legal__badge" href="/retours" target="_blank" rel="noopener"
+                   title="Politique de retour">Politique de retour</a>
+            </div>
+            <label class="field-row checkout-legal__accept" for="accept_cgv">
+                <input type="checkbox" name="accept_cgv" value="1" id="accept_cgv" required
+                       <?= !empty($old['accept_cgv']) ? 'checked' : '' ?>>
+                <span>
+                    J’accepte les conditions générales de vente et j’ai pris connaissance de la politique de retour.
+                </span>
+            </label>
+            <?php if (isset($errors['accept_cgv'])): ?>
+                <p class="field-error"><?= htmlspecialchars($errors['accept_cgv'][0], ENT_QUOTES, 'UTF-8') ?></p>
+            <?php endif ?>
+        </div>
+
         <button type="submit" class="btn-block" id="checkout-payment-submit"><?= htmlspecialchars($submitLabel, ENT_QUOTES, 'UTF-8') ?></button>
         <p class="product-detail__note" style="margin:0.75rem 0 0">
             Avant confirmation, vous pouvez encore

@@ -2,30 +2,32 @@
 
 Toutes les versions notables de ce projet seront documentées ici.
 
-> **Astral Shop est en développement (`main`).**  
-> Aucune release Packagist / tag `1.0.0` pour le moment.  
-> Les entrées ci-dessous décrivent l’historique de travail en cours, pas des versions publiées.
+Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
+et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
-Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
-
-## [Unreleased] — développement
+## [1.0.0] — 2026-10-16
 
 ### Ajouté
-- Boutique basée sur astral-starter : catalogue, panier session, checkout multi-étapes.
+- Boutique : catalogue, panier session, checkout multi-étapes.
 - Paiement Stripe (`astral-payment`) + virement / chèque (instructions offline).
-- Frais de port via `astral-shipping` ^0.1.0 (forfait FR, retrait boutique, franco configurable).
-- Colonnes commande : `payment_method`, `fulfillment_status`, `subtotal_cents`, `shipping_cents`, `invoice_path`.
-- Snapshot livraison (`order_shipments`).
-- Facture PDF (Dompdf) à la confirmation de paiement + mention e-mail + téléchargement espace client.
-- Admin : marquer payée / préparation / envoyée + mails confirmation et expédition.
-- Auth `confirm` par défaut ; `/install` pour le premier admin ; UI indigo Nova-like.
-- Dépendances Packagist : payment ^0.1.2, template ^0.1, shipping ^0.1.0, core ^1.2.
+- Frais de port `astral-shipping` (forfait FR, retrait, franco configurable).
+- Facture PDF (Dompdf) + espace client ; admin prépa / expédition + mails.
+- Réservation stock offline + cron `orders:expire-offline`.
+- Remboursements admin (Stripe / offline) + demande client + RIB + retours colis.
+- Pages légales CGV / mentions / retours / confidentialité + case + badges checkout.
+- Auth `confirm` ; `/install` 1er admin ; UI indigo Nova-like.
+- Docs métier centralisées : `astral-informations/astral-shop/` (roadmap, tests, install).
 
-### En cours / prévu
-- Tests globaux (campagne QA) et correctifs associés.
-- Profils de port avancés (Colissimo, Mondial Relay, Sendcloud) au choix.
-- Guide de démarrage post-install.
-- Tests échecs paiement Stripe.
+### Clarifié (responsabilité marchand)
+- Astral Shop livre le **moteur** ; l’identité légale, les textes, les clés paiement,
+  les montants de port et l’exploitation sont **à établir par la personne qui ouvre la boutique**.
+- Voir `Features/Installation/ouvrir-une-boutique-fr.md` §0 et disclaimer sur les pages légales.
+
+### Hors périmètre (volontaire)
+- **1.1.0** — Colissimo / Mondial Relay / Sendcloud ; infos boutique en BD.
+- **1.5.0** — Optimisation (worker + cache HTTP/OPcache/Redis).
+
+## [Unreleased]
 
 ### Notes
-- Hérité du squelette starter (auth, layout, `.htaccess`) — ce changelog ne reprend pas les numéros de version starter comme releases du shop.
+- Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.

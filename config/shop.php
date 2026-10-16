@@ -31,6 +31,25 @@ return [
         ? (string) $_ENV['SHOP_CURRENCY_SYMBOL']
         : "\u{20AC}",
 
+    /**
+     * Identité légale — à établir par le marchand avant ouverture (`.env` SHOP_LEGAL_*).
+     * Les pages légales sont des modèles ; ce n’est pas une conformité automatique.
+     * Voir ouvrir-une-boutique-fr.md §0 / §3.
+     */
+    'legal' => [
+        'company_name' => (string) ($_ENV['SHOP_LEGAL_COMPANY'] ?? ($_ENV['SHOP_STORE_NAME'] ?? 'Astral Shop')),
+        'address'      => (string) ($_ENV['SHOP_LEGAL_ADDRESS'] ?? ($_ENV['SHOP_STORE_ADDRESS'] ?? '')),
+        'email'        => (string) ($_ENV['SHOP_LEGAL_EMAIL'] ?? ($_ENV['MAIL_FROM'] ?? '')),
+        'phone'        => (string) ($_ENV['SHOP_LEGAL_PHONE'] ?? ''),
+        'siret'        => (string) ($_ENV['SHOP_LEGAL_SIRET'] ?? '[SIRET à renseigner]'),
+        'rcs'          => (string) ($_ENV['SHOP_LEGAL_RCS'] ?? ''),
+        'vat'          => (string) ($_ENV['SHOP_LEGAL_VAT'] ?? ''),
+        'director'     => (string) ($_ENV['SHOP_LEGAL_DIRECTOR'] ?? '[Directeur de la publication]'),
+        'host'         => (string) ($_ENV['SHOP_LEGAL_HOST'] ?? '[Hébergeur — nom, adresse, contact]'),
+        /** Délai de retour / rétractation (jours calendaires) — L2. */
+        'return_days'  => max(1, (int) ($_ENV['SHOP_RETURN_DAYS'] ?? 14)),
+    ],
+
     // Moyens de paiement (étape 4) — instructions offline
     'payment' => [
         'methods' => ['card', 'transfer', 'check'],

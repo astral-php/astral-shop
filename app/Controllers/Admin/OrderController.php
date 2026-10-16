@@ -179,6 +179,33 @@ final class OrderController extends AdminController
         );
     }
 
+    public function markReturnReceived(string $id): Response
+    {
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->markReturnReceived($oid),
+            'Retour colis marqué reçu — vous pouvez accepter / rembourser.',
+        );
+    }
+
+    public function waiveReturn(string $id): Response
+    {
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->waiveReturn($oid),
+            'Retour dispensé — vous pouvez accepter / rembourser.',
+        );
+    }
+
+    public function expireReturn(string $id): Response
+    {
+        return $this->runTransition(
+            (int) $id,
+            fn (int $oid) => $this->fulfillment->expireReturn($oid),
+            'Délai de retour clôturé — pas de remboursement sans dispense.',
+        );
+    }
+
     public function destroy(string $id): Response
     {
         $order = $this->orderDao->findById((int) $id);

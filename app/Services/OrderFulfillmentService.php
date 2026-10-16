@@ -26,7 +26,11 @@ final class OrderFulfillmentService
         private OrderDao $orderDao,
         private EventDispatcher $dispatcher,
         private PaymentService $paymentService,
-    ) {}
+        /** Délai retour L2 (jours calendaires) — défaut 14. */
+        private int $returnDays = 14,
+    ) {
+        $this->returnDays = max(1, $returnDays);
+    }
 
     /**
      * @return array{ok: true, order: Order}|array{ok: false, error: string}
@@ -107,6 +111,7 @@ final class OrderFulfillmentService
 
         $this->orderDao->update($order->id, [
             'fulfillment_status' => Order::FULFILLMENT_SHIPPED,
+            'shipped_at'         => date('Y-m-d H:i:s'),
         ]);
         $this->dispatcher->dispatch(new OrderShipped($order->id));
 
@@ -153,6 +158,7 @@ final class OrderFulfillmentService
             'refund_reject_reason'  => '',
             'refund_rejected_at'    => null,
         ];
+        $data = array_merge($data, $this->buildReturnFieldsOnRequest($order));
 
         if ($order->isOfflinePayment()) {
             $iban = $this->normalizeIban((string) ($rib['iban'] ?? ''));
@@ -201,6 +207,11 @@ final class OrderFulfillmentService
             return ['ok' => false, 'error' => 'La commande n’est plus payée.'];
         }
 
+        $returnBlock = $this->returnBlockMessage($order);
+        if ($returnBlock !== null) {
+            return ['ok' => false, 'error' => $returnBlock];
+        }
+
         $this->orderDao->update($order->id, [
             'refund_request_status' => Order::REFUND_REQUEST_ACCEPTED,
             'refund_accepted_at'    => date('Y-m-d H:i:s'),
@@ -243,6 +254,9 @@ final class OrderFulfillmentService
             'refund_request_status' => Order::REFUND_REQUEST_REJECTED,
             'refund_reject_reason'  => $rejectReason,
             'refund_rejected_at'    => date('Y-m-d H:i:s'),
+            'return_status'         => Order::RETURN_NONE,
+            'return_due_at'         => null,
+            'returned_at'           => null,
         ]);
         $this->dispatcher->dispatch(new RefundRequestRejected($order->id));
 
@@ -274,6 +288,11 @@ final class OrderFulfillmentService
 
         if ($order->payment_method !== Order::PAYMENT_CARD) {
             return ['ok' => false, 'error' => 'Utilisez « Marquer remboursée » pour un paiement offline.'];
+        }
+
+        $returnBlock = $this->returnBlockMessage($order);
+        if ($returnBlock !== null) {
+            return ['ok' => false, 'error' => $returnBlock];
         }
 
         $intentId = trim((string) ($order->stripe_intent_id ?? ''));
@@ -333,6 +352,11 @@ final class OrderFulfillmentService
             return ['ok' => false, 'error' => 'Utilisez « Rembourser (Stripe) » pour une commande carte.'];
         }
 
+        $returnBlock = $this->returnBlockMessage($order);
+        if ($returnBlock !== null) {
+            return ['ok' => false, 'error' => $returnBlock];
+        }
+
         $iban = $this->normalizeIban((string) ($rib['iban'] ?? ''));
         $bic = strtoupper(preg_replace('/\s+/', '', (string) ($rib['bic'] ?? '')) ?? '');
         $holder = trim((string) ($rib['holder'] ?? ''));
@@ -382,6 +406,105 @@ final class OrderFulfillmentService
         return ['ok' => true, 'order' => $fresh];
     }
 
+    /**
+     * Admin — colis retour reçu (G4 UI ; logique G2).
+     *
+     * @return array{ok: true, order: Order}|array{ok: false, error: string}
+     */
+    public function markReturnReceived(int $orderId): array
+    {
+        $order = $this->requireOrder($orderId);
+        if ($order === null) {
+            return ['ok' => false, 'error' => 'Commande introuvable.'];
+        }
+
+        if ($order->isRefunded()) {
+            return ['ok' => false, 'error' => 'Commande déjà remboursée.'];
+        }
+
+        // pending / expired (demande client) ou none (geste admin direct sur commande expédiée)
+        if (
+            !$order->isReturnPending()
+            && !$order->isReturnExpired()
+            && !($order->return_status === Order::RETURN_NONE && $order->wasShippedOrPickedUp())
+        ) {
+            return ['ok' => false, 'error' => 'Aucun retour colis à réceptionner sur cette commande.'];
+        }
+
+        $this->orderDao->update($order->id, [
+            'return_status' => Order::RETURN_RECEIVED,
+            'returned_at'   => date('Y-m-d H:i:s'),
+        ]);
+
+        $fresh = $this->orderDao->findById($order->id);
+        /** @var Order $fresh */
+
+        return ['ok' => true, 'order' => $fresh];
+    }
+
+    /**
+     * Admin — dispense de retour (exception L3 / geste D6).
+     *
+     * @return array{ok: true, order: Order}|array{ok: false, error: string}
+     */
+    public function waiveReturn(int $orderId): array
+    {
+        $order = $this->requireOrder($orderId);
+        if ($order === null) {
+            return ['ok' => false, 'error' => 'Commande introuvable.'];
+        }
+
+        if ($order->isRefunded()) {
+            return ['ok' => false, 'error' => 'Commande déjà remboursée.'];
+        }
+
+        if ($order->isReturnReceived()) {
+            return ['ok' => false, 'error' => 'Le retour est déjà marqué reçu.'];
+        }
+
+        $this->orderDao->update($order->id, [
+            'return_status' => Order::RETURN_WAIVED,
+            'return_due_at' => null,
+            'returned_at'   => null,
+        ]);
+
+        $fresh = $this->orderDao->findById($order->id);
+        /** @var Order $fresh */
+
+        return ['ok' => true, 'order' => $fresh];
+    }
+
+    /**
+     * Clôture sans remboursement si délai dépassé et retour non reçu (L4).
+     *
+     * @return array{ok: true, order: Order}|array{ok: false, error: string}
+     */
+    public function expireReturn(int $orderId): array
+    {
+        $order = $this->requireOrder($orderId);
+        if ($order === null) {
+            return ['ok' => false, 'error' => 'Commande introuvable.'];
+        }
+
+        if (!$order->isReturnPending()) {
+            return ['ok' => false, 'error' => 'Aucun retour en attente à clôturer.'];
+        }
+
+        $due = trim((string) ($order->return_due_at ?? ''));
+        if ($due === '' || $due >= date('Y-m-d H:i:s')) {
+            return ['ok' => false, 'error' => 'Le délai de retour n’est pas encore dépassé.'];
+        }
+
+        $this->orderDao->update($order->id, [
+            'return_status' => Order::RETURN_EXPIRED,
+        ]);
+
+        $fresh = $this->orderDao->findById($order->id);
+        /** @var Order $fresh */
+
+        return ['ok' => true, 'order' => $fresh];
+    }
+
     private function requireOrder(int $orderId): ?Order
     {
         if ($orderId < 1) {
@@ -390,6 +513,57 @@ final class OrderFulfillmentService
 
         /** @var Order|null */
         return $this->orderDao->findById($orderId);
+    }
+
+    /**
+     * @return array{
+     *     return_status: string,
+     *     return_due_at: ?string,
+     *     returned_at: null
+     * }
+     */
+    private function buildReturnFieldsOnRequest(Order $order): array
+    {
+        // Jamais expédié / retiré → pas de colis à renvoyer (exception L3).
+        if (!$order->wasShippedOrPickedUp()) {
+            return [
+                'return_status' => Order::RETURN_WAIVED,
+                'return_due_at' => null,
+                'returned_at'   => null,
+            ];
+        }
+
+        $anchor = trim((string) ($order->shipped_at ?? ''));
+        if ($anchor === '') {
+            $anchor = date('Y-m-d H:i:s');
+        }
+
+        $dueTs = strtotime($anchor . ' +' . $this->returnDays . ' days');
+        $dueAt = $dueTs !== false ? date('Y-m-d H:i:s', $dueTs) : date('Y-m-d H:i:s');
+
+        return [
+            'return_status' => Order::RETURN_PENDING,
+            'return_due_at' => $dueAt,
+            'returned_at'   => null,
+        ];
+    }
+
+    /** Message bloquant si retour requis non satisfait (L4/L5). */
+    private function returnBlockMessage(Order $order): ?string
+    {
+        if ($order->isReturnSatisfiedForRefund()) {
+            return null;
+        }
+
+        if ($order->isReturnPending()) {
+            return 'Retour colis requis : marquez « Retour reçu » (ou dispense) avant de rembourser.';
+        }
+
+        if ($order->isReturnExpired()) {
+            return 'Délai de retour dépassé — pas de remboursement (sauf dispense admin).';
+        }
+
+        return 'Le retour colis n’est pas validé pour cette commande.';
     }
 
     private function normalizeIban(string $iban): string

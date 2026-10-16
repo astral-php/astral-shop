@@ -12,6 +12,7 @@ use App\Controllers\CatalogController;
 use App\Controllers\CheckoutController;
 use App\Controllers\HomeController;
 use App\Controllers\InstallController;
+use App\Controllers\LegalController;
 use App\Controllers\OrderController;
 use App\Controllers\PaymentCheckoutController;
 use App\Controllers\ProfileController;
@@ -38,6 +39,12 @@ return function (Router $router): void {
     $router->group('', function (Router $router): void {
 
         $router->get('/', HomeController::class, 'index');
+
+        $router->get('/cgv', LegalController::class, 'cgv');
+        $router->get('/mentions-legales', LegalController::class, 'mentions');
+        $router->get('/retours', LegalController::class, 'retours');
+        $router->get('/confidentialite', LegalController::class, 'confidentialite');
+        $router->get('/legal/:page', LegalController::class, 'show');
 
         $router->get('/boutique', CatalogController::class, 'index');
         $router->get('/boutique/categorie/:slug', CatalogController::class, 'category');
@@ -117,6 +124,9 @@ return function (Router $router): void {
             $r->post('/orders/:id/mark-refunded',          AdminOrderController::class, 'markRefunded');
             $r->post('/orders/:id/accept-refund-request',  AdminOrderController::class, 'acceptRefundRequest');
             $r->post('/orders/:id/reject-refund-request',  AdminOrderController::class, 'rejectRefundRequest');
+            $r->post('/orders/:id/mark-return-received',   AdminOrderController::class, 'markReturnReceived');
+            $r->post('/orders/:id/waive-return',           AdminOrderController::class, 'waiveReturn');
+            $r->post('/orders/:id/expire-return',          AdminOrderController::class, 'expireReturn');
             $r->post('/orders/:id/delete',                 AdminOrderController::class, 'destroy');
 
             $r->get('/categories',              AdminCategoryController::class, 'index');

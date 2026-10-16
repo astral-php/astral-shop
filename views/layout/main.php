@@ -174,7 +174,10 @@
 
         <footer>
             <?= htmlspecialchars($storeName, ENT_QUOTES, 'UTF-8') ?> ·
-            <a href="https://github.com/astral-php/astral-core" target="_blank" rel="noopener">astral-core</a>
+            <a href="/cgv">CGV</a> ·
+            <a href="/mentions-legales">Mentions légales</a> ·
+            <a href="/retours">Retours</a> ·
+            <a href="/confidentialite">Confidentialité</a>
         </footer>
     </div>
 </body>
