@@ -1,18 +1,21 @@
-# Documentation — Astral Shop
+# Documentation — Astral Shop 1.0.0
 
-## Dans ce dépôt
+## Installation (dans ce dépôt)
 
-| Doc | Chemin |
-|-----|--------|
-| **Installation** (index) | [`docs/Installation/`](./Installation/) |
-| Install pas à pas | [`docs/Installation/guide-install-pas-a-pas.md`](./Installation/guide-install-pas-a-pas.md) |
-| Ouvrir une boutique (FR) | [`docs/Installation/ouvrir-une-boutique-fr.md`](./Installation/ouvrir-une-boutique-fr.md) |
-| README produit | [`README.md`](../README.md) |
-| Changelog | [`CHANGELOG.md`](../CHANGELOG.md) |
+À lire dans l’ordre :
 
-## Hub infos (hors dépôt — roadmap / QA / CDC)
+| Fichier | Rôle |
+|---------|------|
+| [Installation/guide-install-pas-a-pas.md](./Installation/guide-install-pas-a-pas.md) | Install technique : clone, `.env`, migrate, `/install`, Stripe, smoke |
+| [Installation/ouvrir-une-boutique-fr.md](./Installation/ouvrir-une-boutique-fr.md) | **Moteur vs marchand**, cadre légal, checklist avant ouverture |
 
-Travail interne Astral (pas requis pour installer la boutique) :
+> Astral Shop fournit le **moteur**. L’identité légale, les textes, les paiements et le port sont à établir par la personne qui ouvre la boutique — détail dans `ouvrir-une-boutique-fr.md` §0.
+
+Voir aussi : [README produit](../README.md) · [CHANGELOG](../CHANGELOG.md) · [`.env.example`](../.env.example)
+
+## Hub infos (hors dépôt — roadmap / QA)
+
+Travail interne Astral (pas requis pour installer) :
 
 `D:\laragon\www\astral-informations\astral-shop\`
 
@@ -21,4 +24,4 @@ Travail interne Astral (pas requis pour installer la boutique) :
 | Roadmap + versions | `Roadmap/astral-shop.md` |
 | Campagne QA | `Roadmap/test.md` |
 | Optimisation (1.5) | `Features/Optimisation/` |
-| CDC historique | `docs/cdc/` |
+| Miroir guides (aligner avec ce dossier) | `Features/Installation/` |

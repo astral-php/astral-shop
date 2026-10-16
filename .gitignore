@@ -20,8 +20,7 @@
 .agents/
 .claude/
 .cursor/
-# Guides install versionnés dans docs/Installation/ (+ docs/README.md)
-# Anciens dumps locaux éventuels :
+# docs/ est VERSIONNÉ (guides Installation) — ne pas réajouter /docs/
 shop-global-test.md
 *.log
 .DS_Store

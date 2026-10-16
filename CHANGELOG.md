@@ -30,7 +30,7 @@ et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 ## [Unreleased]
 
 ### Ajouté
-- Guides install livrés dans le dépôt : `docs/Installation/` (pas à pas + ouvrir une boutique), liens depuis le README.
+- Guides install dans le dépôt : `docs/Installation/` + index unique `docs/README.md` (liens depuis le README principal).
 
 ### Notes
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.

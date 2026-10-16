@@ -2,10 +2,10 @@
 
 | Quoi | Chemin |
 |------|--------|
-| **Installation (dans ce dépôt)** | [`docs/Installation/`](./docs/Installation/) |
+| **Docs (index)** | [`docs/README.md`](./docs/README.md) |
 | Install pas à pas | [`docs/Installation/guide-install-pas-a-pas.md`](./docs/Installation/guide-install-pas-a-pas.md) |
 | Ouvrir boutique FR | [`docs/Installation/ouvrir-une-boutique-fr.md`](./docs/Installation/ouvrir-une-boutique-fr.md) |
-| README | [`README.md`](./README.md) |
+| README produit | [`README.md`](./README.md) |
 
 ## Hub infos (hors dépôt — roadmap / QA / Features)
 
@@ -16,6 +16,6 @@
 | Roadmap + plan | `Roadmap/astral-shop.md` |
 | Tests pré-pub | `Roadmap/test.md` |
 | Optimisation | `Features/Optimisation/` |
-| CDC (archive) | `docs/cdc/` |
+| Miroir guides | `Features/Installation/` |
 
 Hub Cursor : `D:\laragon\www\mvc` — skill `astral-informations`.

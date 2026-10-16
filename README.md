@@ -8,7 +8,7 @@ Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php
 
 > **Version 1.0.0** — moteur boutique prêt (gate métier + légale).  
 > **Ouvrir une boutique** reste à la charge du marchand : identité, textes, paiements, port, exploitation.  
-> → **[docs/Installation/](./docs/Installation/)** — install pas à pas + guide marchand (§0 « Qui fait quoi »).
+> → Documentation : **[docs/README.md](./docs/README.md)** · guides dans [`docs/Installation/`](./docs/Installation/)
 
 Écosystème : [Astral MVC](https://github.com/astral-php/astral) · [astral-payment](https://packagist.org/packages/astral-php/astral-payment) · [astral-shipping](https://packagist.org/packages/astral-php/astral-shipping) · [astral-template](https://packagist.org/packages/astral-php/astral-template) · [astral-php.dev](https://astral-php.dev)
 
@@ -106,10 +106,9 @@ php bin/console orders:expire-offline
 
 | Doc | Chemin |
 |-----|--------|
-| **Installation** (index) | [`docs/Installation/`](./docs/Installation/) |
+| **Index docs** (entrée unique) | [`docs/README.md`](./docs/README.md) |
 | Install pas à pas | [`docs/Installation/guide-install-pas-a-pas.md`](./docs/Installation/guide-install-pas-a-pas.md) |
 | Ouvrir une boutique FR | [`docs/Installation/ouvrir-une-boutique-fr.md`](./docs/Installation/ouvrir-une-boutique-fr.md) |
-| Index docs | [`docs/README.md`](./docs/README.md) |
 | Roadmap / QA (hub interne) | `astral-informations/astral-shop/Roadmap/` |
 
 ## Roadmap
