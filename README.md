@@ -8,9 +8,7 @@ Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php
 
 > **Version 1.0.0** — moteur boutique prêt (gate métier + légale).  
 > **Ouvrir une boutique** reste à la charge du marchand : identité, textes, paiements, port, exploitation.  
-> Guide : `ouvrir-une-boutique-fr.md` (hub infos, §0 « Qui fait quoi »).
-
-Docs / roadmap / QA : `D:\laragon\www\astral-informations\astral-shop\` (hors dépôt).
+> → **[docs/Installation/](./docs/Installation/)** — install pas à pas + guide marchand (§0 « Qui fait quoi »).
 
 Écosystème : [Astral MVC](https://github.com/astral-php/astral) · [astral-payment](https://packagist.org/packages/astral-php/astral-payment) · [astral-shipping](https://packagist.org/packages/astral-php/astral-shipping) · [astral-template](https://packagist.org/packages/astral-php/astral-template) · [astral-php.dev](https://astral-php.dev)
 
@@ -44,8 +42,7 @@ Docs / roadmap / QA : `D:\laragon\www\astral-informations\astral-shop\` (hors d�
 
 Sans cette configuration, le projet sert de **démo / socle** — pas d’une boutique professionnelle ouverte telle quelle.
 
-Détail et checklist :  
-`astral-informations/astral-shop/Features/Installation/ouvrir-une-boutique-fr.md`
+Détail et checklist : [`docs/Installation/ouvrir-une-boutique-fr.md`](./docs/Installation/ouvrir-une-boutique-fr.md)
 
 ## Prérequis
 
@@ -105,14 +102,15 @@ Expiration + restock (cron / Task Scheduler, ex. 1×/heure) :
 php bin/console orders:expire-offline
 ```
 
-## Documentation (hub infos)
+## Documentation
 
 | Doc | Chemin |
 |-----|--------|
-| Roadmap + versions | `astral-informations/astral-shop/Roadmap/astral-shop.md` |
-| Campagne QA | `…/Roadmap/test.md` |
-| Install pas à pas | `…/Features/Installation/guide-install-pas-a-pas.md` |
-| Ouvrir une boutique FR | `…/Features/Installation/ouvrir-une-boutique-fr.md` |
+| **Installation** (index) | [`docs/Installation/`](./docs/Installation/) |
+| Install pas à pas | [`docs/Installation/guide-install-pas-a-pas.md`](./docs/Installation/guide-install-pas-a-pas.md) |
+| Ouvrir une boutique FR | [`docs/Installation/ouvrir-une-boutique-fr.md`](./docs/Installation/ouvrir-une-boutique-fr.md) |
+| Index docs | [`docs/README.md`](./docs/README.md) |
+| Roadmap / QA (hub interne) | `astral-informations/astral-shop/Roadmap/` |
 
 ## Roadmap
 

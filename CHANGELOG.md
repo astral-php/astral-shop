@@ -29,5 +29,8 @@ et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Ajouté
+- Guides install livrés dans le dépôt : `docs/Installation/` (pas à pas + ouvrir une boutique), liens depuis le README.
+
 ### Notes
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.

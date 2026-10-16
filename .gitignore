@@ -16,12 +16,12 @@
 /.phpunit.result.cache
 .phpunit.cache/
 .vscode/
-/docs/
 .idea/
 .agents/
 .claude/
 .cursor/
-astral-shop.md
+# Guides install versionnés dans docs/Installation/ (+ docs/README.md)
+# Anciens dumps locaux éventuels :
 shop-global-test.md
 *.log
 .DS_Store
