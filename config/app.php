@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 return [
     'name'     => $_ENV['APP_NAME']     ?? 'Astral Shop',
-    'version'  => $_ENV['APP_VERSION']  ?? '0.1.1',
+    'version'  => $_ENV['APP_VERSION']  ?? '1.1.0',
     'env'      => $_ENV['APP_ENV']      ?? 'production',
     'debug'    => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     'timezone' => $_ENV['APP_TIMEZONE'] ?? 'UTC',
@@ -30,11 +30,18 @@ return [
         'from_name'   => $_ENV['MAIL_FROM_NAME']    ?? 'Astral Shop',
     ],
 
-    // astral-shipping — MVP FR : forfait + retrait (+ franco)
+    // astral-shipping ^0.5 — Profil B : forfait + retrait + Colissimo/MR (barèmes DB)
+    // Profil A (MVP) : methods => ['flat_rate', 'store_pickup'], rates_source => 'config'
     'shipping' => [
-        'methods' => ['flat_rate', 'store_pickup'],
+        'methods' => [
+            'flat_rate',
+            'store_pickup',
+            'colissimo_home',
+            'colissimo_pickup',
+            'mondial_relay',
+        ],
         'free_shipping_threshold_cents' => (int) ($_ENV['SHOP_FREE_SHIPPING_CENTS'] ?? 6000),
-        'rates_source' => 'config',
+        'rates_source' => 'database',
         'http_timeout' => 10,
         'flat_rate' => [
             'price_cents' => (int) ($_ENV['SHOP_FLAT_RATE_CENTS'] ?? 590),

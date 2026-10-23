@@ -17,6 +17,8 @@ use App\Dao\OrderDao;
 use App\Dao\OrderItemDao;
 use App\Dao\ProductDao;
 use App\Services\OrderStockService;
+use AstralShipping\Console\ImportRatesCommand;
+use AstralShipping\Dao\ShippingRateDao;
 use Core\Console\Console;
 use Core\Console\Commands\ClearCacheCommand;
 use Core\Console\Commands\MakeControllerCommand;
@@ -57,6 +59,7 @@ try {
     $logger       = new Logger(BASE_PATH . '/storage/logs');
     $stock        = new OrderStockService($pdo, $orderDao, $orderItemDao, $productDao, $logger);
     $console->register(new ExpireOfflineOrdersCommand($orderDao, $stock));
+    $console->register(new ImportRatesCommand(new ShippingRateDao($pdo), $pdo));
 } catch (\Throwable $e) {
     fwrite(STDERR, "\033[33m⚠ Commandes de migration indisponibles : " . $e->getMessage() . "\033[0m\n");
 }

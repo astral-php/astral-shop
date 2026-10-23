@@ -16,6 +16,8 @@ final class Product
     public int     $price_cents  = 0;
     public string  $currency     = 'EUR';
     public int     $stock        = 0;
+    /** Poids unitaire en grammes (frais de port barème). */
+    public int     $weight_g     = 0;
     public ?string $sku          = null;
     public ?string $image_path   = null;
     public ?string $image_url    = null;

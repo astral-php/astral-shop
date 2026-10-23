@@ -5,9 +5,19 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
-## [Unreleased]
+## [1.1.0] — 2026-10-23
+
+### Ajouté
+- Dépendance `astral-php/astral-shipping` **^0.5.3** (barèmes Colissimo / Mondial Relay matures).
+- Profil livraison Colissimo / Mondial Relay (barèmes DB) + forfait / retrait.
+- Colonne produit `weight_g` (admin + calcul panier).
+- Checkout : point relais (`pickup_point_*` session + UI démo / hooks widget).
+- Commande `shipping:rates:import` + `database/rates.example.csv`.
+- Affichage point relais sur fiches commande (client / admin).
 
 ### Notes
+- PayPal → **1.1.1** · Sendcloud / API étiquettes transporteur → plus tard.
+- QA manuelle §5.2 / 5.3 (`astral-informations` `Roadmap/test.md`) OK.
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.
 
 ## [1.0.2] — 2026-10-16

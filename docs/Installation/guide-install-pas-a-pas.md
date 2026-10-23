@@ -22,10 +22,14 @@ cd astral-shop
 composer install
 cp .env.example .env
 php bin/console migrate
+php bin/console shipping:rates:import database/rates.example.csv --replace
 ```
 
 Vhost Laragon → ex. `http://astral-shop.local`  
 ou `composer run serve`.
+
+**Livraison 1.1 :** barèmes Colissimo / Mondial Relay via CSV (exemple fictif ci-dessus).  
+Produits : renseigner le **poids (g)** en admin. Widgets relais officiels → doc `astral-shipping` `widgets-pickup.md` (UI saisie démo dans le checkout).
 
 ---
 

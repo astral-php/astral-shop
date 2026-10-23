@@ -1,0 +1,42 @@
+method_code,country,min_weight_g,max_weight_g,price_eur,estimated_days
+# Valeurs FICTIVES — remplace par ton contrat. Bornes inclusives (0-500 puis 501-1000).
+# Colissimo domicile — plafond 30 kg (30000 g). Boîte aux lettres étiquette = 5 kg (hors défaut).
+colissimo_home,FR,0,500,5.20,2
+colissimo_home,FR,501,1000,6.80,2
+colissimo_home,FR,1001,2000,8.10,2
+colissimo_home,FR,2001,5000,12.50,2
+colissimo_home,FR,5001,10000,16.00,2
+colissimo_home,FR,10001,20000,22.00,3
+colissimo_home,FR,20001,30000,28.00,3
+# Colissimo domicile — UE (exemples)
+colissimo_home,BE,0,1000,9.90,3
+colissimo_home,BE,1001,3000,14.50,3
+colissimo_home,BE,3001,30000,24.00,4
+colissimo_home,DE,0,1000,10.50,3
+colissimo_home,DE,1001,3000,15.90,3
+colissimo_home,DE,3001,30000,26.00,4
+# Colissimo point de retrait — plafond relais/consignes 20 kg (20000 g). Bureau de poste jusqu'à 30 kg = grille à part.
+colissimo_pickup,FR,0,1000,4.60,3
+colissimo_pickup,FR,1001,3000,6.20,3
+colissimo_pickup,FR,3001,5000,8.90,3
+colissimo_pickup,FR,5001,10000,11.50,3
+colissimo_pickup,FR,10001,20000,15.00,4
+# Mondial Relay point relais — plafond standard 30 kg (30000 g). Lockers / IT / PL = 25 kg.
+# Au-delà de la dernière tranche : aucune offre (voir docs/colissimo-mondial-relay.md).
+mondial_relay,FR,0,500,3.90,3
+mondial_relay,FR,501,1000,4.90,3
+mondial_relay,FR,1001,3000,6.50,3
+mondial_relay,FR,3001,5000,8.20,3
+mondial_relay,FR,5001,10000,10.50,3
+mondial_relay,FR,10001,20000,14.00,4
+mondial_relay,FR,20001,30000,18.00,4
+mondial_relay,BE,0,1000,5.50,4
+mondial_relay,BE,1001,3000,7.20,4
+mondial_relay,BE,3001,25000,12.00,4
+mondial_relay,DE,0,1000,6.10,4
+mondial_relay,DE,1001,25000,11.50,4
+# Mondial Relay domicile (si contrat) — même plafond 30 kg
+mondial_relay_home,FR,0,1000,5.90,3
+mondial_relay_home,FR,1001,3000,7.80,3
+mondial_relay_home,FR,3001,10000,11.00,3
+mondial_relay_home,FR,10001,30000,16.50,4

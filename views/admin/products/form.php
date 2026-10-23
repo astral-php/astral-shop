@@ -21,6 +21,7 @@ $val = static function (string $key, mixed $fallback = '') use ($old, $product):
         'price' => number_format($product->price_cents / 100, 2, ',', ''),
         'category_id' => (string) ($product->category_id ?? ''),
         'stock' => (string) $product->stock,
+        'weight_g' => (string) $product->weight_g,
         'sku' => (string) ($product->sku ?? ''),
         'image_path' => (string) ($product->image_path ?? ''),
         'image_url' => (string) ($product->image_url ?? ''),
@@ -88,6 +89,15 @@ $activeChecked = array_key_exists('active', $old)
             <label for="stock">Stock</label>
             <input class="input" type="number" min="0" id="stock" name="stock"
                    value="<?= htmlspecialchars($val('stock', '0'), ENT_QUOTES, 'UTF-8') ?>">
+        </div>
+
+        <div class="field">
+            <label for="weight_g">Poids (grammes)</label>
+            <input class="input" type="number" min="0" id="weight_g" name="weight_g"
+                   value="<?= htmlspecialchars($val('weight_g', '0'), ENT_QUOTES, 'UTF-8') ?>">
+            <p class="hint" style="margin:0.35rem 0 0;font-size:0.8rem;color:var(--muted)">
+                Utilisé pour les barèmes Colissimo / Mondial Relay (0 = tranche la plus légère).
+            </p>
         </div>
 
         <div class="field">

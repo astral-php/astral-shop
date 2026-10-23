@@ -1,4 +1,4 @@
-# Documentation — Astral Shop 1.0.2
+# Documentation — Astral Shop 1.1.0
 
 ## Installation (dans ce dépôt)
 

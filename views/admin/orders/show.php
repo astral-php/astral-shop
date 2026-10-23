@@ -154,6 +154,19 @@ $storeName = (string) ($shop['store_name'] ?? 'Boutique');
                 <p class="order-invoice-sheet__text">
                     <?php if ($shipment !== null): ?>
                         <strong><?= htmlspecialchars((string) ($shipment['label'] ?? 'Livraison'), ENT_QUOTES, 'UTF-8') ?></strong><br>
+                        <?php
+                        $relayLabel = trim((string) ($shipment['pickup_point_label'] ?? ''));
+                        $relayId = trim((string) ($shipment['pickup_point_id'] ?? ''));
+                        ?>
+                        <?php if ($relayLabel !== '' || $relayId !== ''): ?>
+                            <span class="order-invoice-sheet__muted">
+                                Point relais :
+                                <?= htmlspecialchars($relayLabel !== '' ? $relayLabel : $relayId, ENT_QUOTES, 'UTF-8') ?>
+                                <?php if ($relayLabel !== '' && $relayId !== ''): ?>
+                                    (<?= htmlspecialchars($relayId, ENT_QUOTES, 'UTF-8') ?>)
+                                <?php endif ?>
+                            </span><br>
+                        <?php endif ?>
                     <?php endif ?>
                     <?php if ($isPickup && $storeAddress !== ''): ?>
                         <span class="order-invoice-sheet__muted">Magasin : <?= htmlspecialchars($storeAddress, ENT_QUOTES, 'UTF-8') ?></span><br>

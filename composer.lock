@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c823191225114330d2e2b2afe9f5633a",
+    "content-hash": "65c0ee2adc70916d1bb5c66d53f5434b",
     "packages": [
         {
             "name": "astral-php/astral-core",
@@ -121,16 +121,16 @@
         },
         {
             "name": "astral-php/astral-shipping",
-            "version": "0.1.0",
+            "version": "0.5.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-shipping.git",
-                "reference": "04a22e64ec0e534c439a3d49427d81c453a488fd"
+                "reference": "de4616eaabf05968bb9a8846cb0d25d23e5422ff"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-shipping/zipball/04a22e64ec0e534c439a3d49427d81c453a488fd",
-                "reference": "04a22e64ec0e534c439a3d49427d81c453a488fd",
+                "url": "https://api.github.com/repos/astral-php/astral-shipping/zipball/de4616eaabf05968bb9a8846cb0d25d23e5422ff",
+                "reference": "de4616eaabf05968bb9a8846cb0d25d23e5422ff",
                 "shasum": ""
             },
             "require": {
@@ -180,7 +180,7 @@
                 "issues": "https://github.com/astral-php/astral-shipping/issues",
                 "source": "https://github.com/astral-php/astral-shipping"
             },
-            "time": "2026-10-11T07:13:29+00:00"
+            "time": "2026-10-23T12:27:41+00:00"
         },
         {
             "name": "astral-php/astral-template",

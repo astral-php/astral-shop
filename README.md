@@ -3,10 +3,10 @@
 Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php) — catalogue, panier, checkout, Stripe, frais de port, facture PDF, remboursements et retours colis.
 
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Version 1.0.2** — moteur boutique prêt (gate métier + légale).  
+> **Version 1.1.0** — Colissimo / Mondial Relay (barèmes) + poids produits.  
 > **Ouvrir une boutique** reste à la charge du marchand : identité, textes, paiements, port, exploitation.  
 > → Documentation : **[docs/README.md](./docs/README.md)** · guides dans [`docs/Installation/`](./docs/Installation/)
 
@@ -20,7 +20,7 @@ Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php
 | Auth | `AUTH_REGISTRATION=confirm` (défaut boutique), `/install` 1er admin |
 | Tunnel | Panier → adresse → **livraison** → carte / virement / chèque + acceptation CGV |
 | Paiement | Stripe (webhook) + offline (IBAN / chèque) |
-| Port | `astral-shipping` : **forfait FR** + retrait + franco (seuil configurable) |
+| Port | `astral-shipping` ^0.5 : forfait + retrait + **Colissimo / MR** (barèmes) + franco |
 | Commandes | Statut paiement ≠ statut colis ; admin préparation / expédition |
 | Facture | PDF Dompdf au paiement, téléchargement espace client |
 | Remboursements | Demande client, RIB offline, accept/refus, Stripe / marquage offline |
@@ -28,7 +28,7 @@ Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php
 | Légal | Pages modèles CGV / mentions / retours / confidentialité + `SHOP_LEGAL_*` |
 | UI | Indigo Nova-like (`#4f46e5`), `astral-template` admin |
 
-**Hors 1.0.0 :** Colissimo / Mondial Relay / Sendcloud → **1.1.0** · worker / cache avancé → **1.5.0**.
+**Hors 1.1.0 :** PayPal → **1.1.1** · Sendcloud / API étiquettes → plus tard · worker / cache → **1.5.0**.
 
 ## Moteur vs marchand (à être clair)
 
@@ -59,22 +59,26 @@ cd astral-shop
 composer install
 cp .env.example .env
 php bin/console migrate
+php bin/console shipping:rates:import database/rates.example.csv --replace
 composer run serve
 # ou vhost Laragon → http://astral-shop.local
 ```
 
 1. Ouvrir `/install` → créer le compte admin  
-2. Admin : catégories + produits  
+2. Admin : catégories + produits (**poids en grammes** pour les barèmes)  
 3. Configurer `STRIPE_*`, `SHOP_LEGAL_*`, IBAN / chèque si besoin  
 4. Webhook local :  
    `stripe listen --forward-to http://astral-shop.local/webhooks/stripe`
+
+Barèmes Colissimo / MR : CSV d’exemple ci-dessus (valeurs fictives — remplace par ton contrat).  
+Widgets relais officiels : doc package `astral-shipping` → `docs/widgets-pickup.md` (UI démo intégrée au checkout).
 
 ## Dépendances Astral (Packagist)
 
 ```json
 "astral-php/astral-core": "^1.2",
 "astral-php/astral-payment": "^0.1.2",
-"astral-php/astral-shipping": "^0.1.0",
+"astral-php/astral-shipping": "^0.5.3",
 "astral-php/astral-template": "^0.1"
 ```
 
@@ -113,9 +117,9 @@ php bin/console orders:expire-offline
 
 ## Roadmap
 
-- **1.0.0 → 1.0.2** — livré ; 1.0.1 sans pointeur interne ; 1.0.2 UTF-8 `.env.example`  
-- **1.1.0** — Colissimo / Mondial Relay / Sendcloud ; légal en BD  
-- **1.5.0** — Optimisation (worker + cache)
+- **1.0.0 → 1.0.2** — livré  
+- **1.1.0** — livré (Colissimo / MR barèmes + `weight_g`)  
+- **1.1.1** — PayPal · **1.5.0** — Optimisation (worker + cache)
 
 ## Licence
 

@@ -33,6 +33,7 @@ final class CheckoutController extends AbstractController
     private const SESSION_SHIPPING = 'checkout.shipping';
     private const SESSION_BILLING = 'checkout.billing';
     private const SESSION_METHOD = 'checkout.shipping_method';
+    private const SESSION_PICKUP = 'checkout.pickup_point';
     private const SESSION_PENDING = 'checkout.pending_order_id';
 
     /** @param array<string, mixed> $shop */
@@ -179,6 +180,7 @@ final class CheckoutController extends AbstractController
         }
 
         $selected = (string) $this->session->get(self::SESSION_METHOD, $quotes[0]->code);
+        $pickup = $this->sessionPickup();
 
         return $this->render('checkout/shipping', [
             'title' => 'Livraison',
@@ -187,6 +189,8 @@ final class CheckoutController extends AbstractController
             'subtotal' => $context->subtotalCents,
             'quotes' => $quotes,
             'selected' => $selected,
+            'pickup_point_id' => $pickup['id'] ?? '',
+            'pickup_point_label' => $pickup['label'] ?? '',
             'errors' => [],
         ]);
     }
@@ -206,10 +210,17 @@ final class CheckoutController extends AbstractController
         }
 
         $code = trim((string) $this->request->input('shipping_method', ''));
+        $pickupId = trim((string) $this->request->input('pickup_point_id', ''));
+        $pickupLabel = trim((string) $this->request->input('pickup_point_label', ''));
         $context = $this->shippingContext($address);
 
         try {
-            $this->shippingService->select($context, $code);
+            $selection = $this->shippingService->select(
+                $context,
+                $code,
+                $pickupId !== '' ? $pickupId : null,
+                $pickupLabel !== '' ? $pickupLabel : null,
+            );
         } catch (InvalidSelectionException $e) {
             return $this->render('checkout/shipping', [
                 'title' => 'Livraison',
@@ -218,11 +229,21 @@ final class CheckoutController extends AbstractController
                 'subtotal' => $context->subtotalCents,
                 'quotes' => $this->shippingService->quotes($context),
                 'selected' => $code,
+                'pickup_point_id' => $pickupId,
+                'pickup_point_label' => $pickupLabel,
                 'errors' => ['shipping_method' => [$e->getMessage()]],
             ]);
         }
 
         $this->session->set(self::SESSION_METHOD, $code);
+        if ($selection->pickupPoint !== null) {
+            $this->session->set(self::SESSION_PICKUP, [
+                'id' => $selection->pickupPoint->id,
+                'label' => $selection->pickupPoint->label,
+            ]);
+        } else {
+            $this->session->forget(self::SESSION_PICKUP);
+        }
 
         return $this->redirect('/checkout/payment');
     }
@@ -259,6 +280,8 @@ final class CheckoutController extends AbstractController
             'shipping' => $selection->quote->priceCents,
             'total' => $this->shippingService->total($subtotal, $selection),
             'quote' => $selection->quote,
+            'pickup_point_label' => $selection->pickupPoint?->label ?? '',
+            'pickup_point_id' => $selection->pickupPoint?->id ?? '',
             'methods' => $this->enabledMethods(),
             'errors' => [],
             'old' => [
@@ -513,9 +536,18 @@ final class CheckoutController extends AbstractController
      */
     private function shippingContext(array $address): ShippingContext
     {
+        $weightGrams = 0;
+        foreach ($this->cart->lines() as $line) {
+            $product = $line['product'] ?? null;
+            if ($product === null) {
+                continue;
+            }
+            $weightGrams += max(0, (int) $product->weight_g) * max(1, (int) $line['qty']);
+        }
+
         return new ShippingContext(
             subtotalCents: $this->cart->totalCents(),
-            weightGrams: 0,
+            weightGrams: $weightGrams,
             destination: new Address(
                 country: (string) ($address['shipping_country'] ?? 'FR'),
                 postalCode: (string) ($address['shipping_postal'] ?? ''),
@@ -523,6 +555,14 @@ final class CheckoutController extends AbstractController
                 line1: (string) ($address['shipping_line1'] ?? ''),
             ),
         );
+    }
+
+    /** @return array{id?: string, label?: string} */
+    private function sessionPickup(): array
+    {
+        $data = $this->session->get(self::SESSION_PICKUP, []);
+
+        return is_array($data) ? $data : [];
     }
 
     private function resolveSelection(): ?ShippingSelection
@@ -533,10 +573,20 @@ final class CheckoutController extends AbstractController
             return null;
         }
 
+        $pickup = $this->sessionPickup();
+        $pickupId = trim((string) ($pickup['id'] ?? ''));
+        $pickupLabel = trim((string) ($pickup['label'] ?? ''));
+
         try {
-            return $this->shippingService->select($this->shippingContext($address), $code);
+            return $this->shippingService->select(
+                $this->shippingContext($address),
+                $code,
+                $pickupId !== '' ? $pickupId : null,
+                $pickupLabel !== '' ? $pickupLabel : null,
+            );
         } catch (InvalidSelectionException) {
             $this->session->forget(self::SESSION_METHOD);
+            $this->session->forget(self::SESSION_PICKUP);
             return null;
         }
     }
@@ -546,6 +596,7 @@ final class CheckoutController extends AbstractController
         $this->session->forget(self::SESSION_SHIPPING);
         $this->session->forget(self::SESSION_BILLING);
         $this->session->forget(self::SESSION_METHOD);
+        $this->session->forget(self::SESSION_PICKUP);
         $this->session->forget(self::SESSION_PENDING);
         $this->session->forget('checkout.payment_method');
     }

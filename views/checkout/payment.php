@@ -63,7 +63,13 @@ $submitLabel = $submitLabels[$selected] ?? 'Confirmer';
         <p style="margin:0.85rem 0 0;font-size:0.9rem;color:var(--muted)">
             Sous-total :
             <strong style="color:var(--text)"><?= htmlspecialchars(Money::formatCents($subtotal, $symbol), ENT_QUOTES, 'UTF-8') ?></strong><br>
-            Livraison (<?= htmlspecialchars($quote->label, ENT_QUOTES, 'UTF-8') ?>) :
+            Livraison (<?= htmlspecialchars($quote->label, ENT_QUOTES, 'UTF-8') ?><?php
+                $relay = trim((string) ($pickup_point_label ?? ''));
+                if ($relay === '') {
+                    $relay = trim((string) ($pickup_point_id ?? ''));
+                }
+                echo $relay !== '' ? ' — ' . htmlspecialchars($relay, ENT_QUOTES, 'UTF-8') : '';
+            ?>) :
             <strong style="color:var(--text)"><?= htmlspecialchars($shipLabel, ENT_QUOTES, 'UTF-8') ?></strong>
         </p>
         <p class="cart-summary__total" style="margin-top:0.85rem">
