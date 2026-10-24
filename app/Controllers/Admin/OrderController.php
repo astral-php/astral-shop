@@ -130,10 +130,20 @@ final class OrderController extends AdminController
 
     public function refund(string $id): Response
     {
+        $order = $this->orderDao->findById((int) $id);
+        $isPaypal = $order instanceof Order && $order->payment_method === Order::PAYMENT_PAYPAL;
+        $msg = $isPaypal
+            ? 'Remboursement PayPal initié — commande marquée remboursée, stock rétabli, e-mail envoyé.'
+            : 'Remboursement Stripe initié — commande marquée remboursée, stock rétabli, e-mail envoyé.';
+
         return $this->runTransition(
             (int) $id,
-            fn (int $oid) => $this->fulfillment->refundCard($oid),
-            'Remboursement Stripe initié — commande marquée remboursée, stock rétabli, e-mail envoyé.',
+            function (int $oid) use ($isPaypal) {
+                return $isPaypal
+                    ? $this->fulfillment->refundPaypal($oid)
+                    : $this->fulfillment->refundCard($oid);
+            },
+            $msg,
         );
     }
 
@@ -157,9 +167,12 @@ final class OrderController extends AdminController
     {
         $order = $this->orderDao->findById((int) $id);
         $isCard = $order instanceof Order && $order->payment_method === Order::PAYMENT_CARD;
-        $msg = $isCard
-            ? 'Demande acceptée — remboursement Stripe effectué, stock rétabli, e-mail envoyé.'
-            : 'Demande acceptée — effectuez le virement sortant puis marquez la commande remboursée.';
+        $isPaypal = $order instanceof Order && $order->payment_method === Order::PAYMENT_PAYPAL;
+        $msg = match (true) {
+            $isCard   => 'Demande acceptée — remboursement Stripe effectué, stock rétabli, e-mail envoyé.',
+            $isPaypal => 'Demande acceptée — remboursement PayPal effectué, stock rétabli, e-mail envoyé.',
+            default   => 'Demande acceptée — effectuez le virement sortant puis marquez la commande remboursée.',
+        };
 
         return $this->runTransition(
             (int) $id,

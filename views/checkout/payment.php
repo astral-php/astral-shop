@@ -22,6 +22,10 @@ $labels = [
         'Carte bancaire',
         'Paiement immédiat et sécurisé (Stripe). Confirmation dès validation bancaire.',
     ],
+    Order::PAYMENT_PAYPAL   => [
+        'PayPal',
+        'Paiement sécurisé via votre compte PayPal. Confirmation après validation sur PayPal.',
+    ],
     Order::PAYMENT_TRANSFER => [
         'Virement bancaire',
         'Votre commande est enregistrée tout de suite ; vous recevez l’IBAN et la référence. Paiement validé à réception du virement.',
@@ -34,6 +38,7 @@ $labels = [
 
 $submitLabels = [
     Order::PAYMENT_CARD     => 'Payer par carte',
+    Order::PAYMENT_PAYPAL   => 'Payer avec PayPal',
     Order::PAYMENT_TRANSFER => 'Confirmer ma commande',
     Order::PAYMENT_CHECK    => 'Confirmer ma commande',
 ];
@@ -99,7 +104,7 @@ $submitLabel = $submitLabels[$selected] ?? 'Confirmer';
                            name="payment_method"
                            value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"
                            data-submit-label="<?= htmlspecialchars($submitLabels[$code] ?? 'Confirmer', ENT_QUOTES, 'UTF-8') ?>"
-                           data-is-offline="<?= $code === Order::PAYMENT_CARD ? '0' : '1' ?>"
+                           data-is-offline="<?= in_array($code, [Order::PAYMENT_CARD, Order::PAYMENT_PAYPAL], true) ? '0' : '1' ?>"
                            <?= $selected === $code ? 'checked' : '' ?>
                            required>
                     <span class="payment-method-option__body">
@@ -111,8 +116,8 @@ $submitLabel = $submitLabels[$selected] ?? 'Confirmer';
         </fieldset>
 
         <p class="checkout-commit-note" id="checkout-commit-note" style="margin:1rem 0 0;font-size:0.9rem;color:var(--muted);line-height:1.5">
-            <?php if ($selected === Order::PAYMENT_CARD): ?>
-                Vous serez redirigé vers le paiement sécurisé. La commande n’est confirmée qu’après validation bancaire.
+            <?php if (in_array($selected, [Order::PAYMENT_CARD, Order::PAYMENT_PAYPAL], true)): ?>
+                Vous serez redirigé vers le paiement sécurisé. La commande n’est confirmée qu’après validation du paiement.
             <?php else: ?>
                 En confirmant, votre commande est <strong style="color:var(--text)">enregistrée définitivement</strong>
                 (adresse et livraison figées). Vous ne pourrez plus revenir en arrière dans le tunnel :
@@ -156,7 +161,7 @@ $submitLabel = $submitLabels[$selected] ?? 'Confirmer';
     var steps = document.querySelector('.checkout-steps');
     if (!form || !btn) return;
 
-    var noteCard = 'Vous serez redirigé vers le paiement sécurisé. La commande n’est confirmée qu’après validation bancaire.';
+    var noteCard = 'Vous serez redirigé vers le paiement sécurisé. La commande n’est confirmée qu’après validation du paiement.';
     var noteOffline = 'En confirmant, votre commande est <strong style="color:var(--text)">enregistrée définitivement</strong> (adresse et livraison figées). Vous ne pourrez plus revenir en arrière dans le tunnel : vous recevrez les instructions de paiement, le règlement sera validé à réception.';
 
     function selectedInput() {

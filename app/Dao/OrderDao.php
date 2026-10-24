@@ -69,6 +69,40 @@ final class OrderDao extends AbstractDao
         return $rows[0] ?? null;
     }
 
+    public function findByPaypalOrderId(string $paypalOrderId): ?Order
+    {
+        if ($paypalOrderId === '') {
+            return null;
+        }
+
+        $rows = $this->query(
+            "SELECT * FROM {$this->getTable()}
+             WHERE paypal_order_id = :pid
+             LIMIT 1",
+            [':pid' => $paypalOrderId],
+        );
+
+        /** @var Order|null */
+        return $rows[0] ?? null;
+    }
+
+    public function findByPaypalCaptureId(string $captureId): ?Order
+    {
+        if ($captureId === '') {
+            return null;
+        }
+
+        $rows = $this->query(
+            "SELECT * FROM {$this->getTable()}
+             WHERE paypal_capture_id = :cid
+             LIMIT 1",
+            [':cid' => $captureId],
+        );
+
+        /** @var Order|null */
+        return $rows[0] ?? null;
+    }
+
     /**
      * Toutes les commandes (admin), client joint.
      *

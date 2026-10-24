@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\CheckoutService;
+use AstralPaypal\PaypalService;
 use AstralShipping\Exception\InvalidSelectionException;
 use AstralShipping\Models\Address;
 use AstralShipping\Models\ShippingContext;
@@ -47,6 +48,7 @@ final class CheckoutController extends AbstractController
         private ShippingService $shippingService,
         private OrderDao $orderDao,
         private UserDao $userDao,
+        private PaypalService $paypal,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -365,6 +367,12 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/payment/checkout?order_id=' . $order->id);
         }
 
+        if ($method === Order::PAYMENT_PAYPAL) {
+            $this->session->set(self::SESSION_PENDING, $order->id);
+            $this->session->flash('success', 'Finalisez le paiement avec PayPal.');
+            return $this->redirect('/payment/paypal?order_id=' . $order->id);
+        }
+
         $this->clearCheckoutSession();
         $this->session->flash(
             'success',
@@ -387,6 +395,10 @@ final class CheckoutController extends AbstractController
 
         if ($order->payment_method === Order::PAYMENT_CARD) {
             return $this->redirect('/payment/checkout?order_id=' . $order->id);
+        }
+
+        if ($order->payment_method === Order::PAYMENT_PAYPAL) {
+            return $this->redirect('/payment/paypal?order_id=' . $order->id);
         }
 
         if ($order->isCancelled()) {
@@ -440,7 +452,11 @@ final class CheckoutController extends AbstractController
         $order = $this->findOwnedOrder($pendingId);
         $this->session->forget(self::SESSION_PENDING);
 
-        if ($order === null || !$order->isOpen() || $order->payment_method !== Order::PAYMENT_CARD) {
+        if (
+            $order === null
+            || !$order->isOpen()
+            || !in_array($order->payment_method, [Order::PAYMENT_CARD, Order::PAYMENT_PAYPAL], true)
+        ) {
             return false;
         }
 
@@ -498,13 +514,22 @@ final class CheckoutController extends AbstractController
             return [Order::PAYMENT_CARD];
         }
 
-        $allowed = [Order::PAYMENT_CARD, Order::PAYMENT_TRANSFER, Order::PAYMENT_CHECK];
+        $allowed = [
+            Order::PAYMENT_CARD,
+            Order::PAYMENT_PAYPAL,
+            Order::PAYMENT_TRANSFER,
+            Order::PAYMENT_CHECK,
+        ];
         $out = [];
         foreach ($configured as $m) {
             $m = (string) $m;
-            if (in_array($m, $allowed, true)) {
-                $out[] = $m;
+            if (!in_array($m, $allowed, true)) {
+                continue;
             }
+            if ($m === Order::PAYMENT_PAYPAL && !$this->paypal->isConfigured()) {
+                continue;
+            }
+            $out[] = $m;
         }
 
         return $out !== [] ? $out : [Order::PAYMENT_CARD];

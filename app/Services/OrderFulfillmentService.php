@@ -13,6 +13,7 @@ use App\Events\RefundRequestRejected;
 use App\Events\RefundRequested;
 use App\Models\Order;
 use AstralPayment\PaymentService;
+use AstralPaypal\PaypalService;
 use Core\Events\EventDispatcher;
 use Throwable;
 
@@ -26,6 +27,7 @@ final class OrderFulfillmentService
         private OrderDao $orderDao,
         private EventDispatcher $dispatcher,
         private PaymentService $paymentService,
+        private PaypalService $paypalService,
         /** Délai retour L2 (jours calendaires) — défaut 14. */
         private int $returnDays = 14,
     ) {
@@ -222,6 +224,10 @@ final class OrderFulfillmentService
             return $this->refundCard($order->id);
         }
 
+        if ($order->payment_method === Order::PAYMENT_PAYPAL) {
+            return $this->refundPaypal($order->id);
+        }
+
         $fresh = $this->orderDao->findById($order->id);
         /** @var Order $fresh */
 
@@ -304,6 +310,66 @@ final class OrderFulfillmentService
             $this->paymentService->refund($intentId);
         } catch (Throwable $e) {
             return ['ok' => false, 'error' => 'Stripe a refusé le remboursement : ' . $e->getMessage()];
+        }
+
+        $update = [
+            'status'      => 'refunded',
+            'refunded_at' => date('Y-m-d H:i:s'),
+        ];
+        if ($order->hasRefundRequestPending() || $order->hasRefundRequestAccepted()) {
+            $update['refund_request_status'] = Order::REFUND_REQUEST_ACCEPTED;
+            if ($order->refund_accepted_at === null || trim((string) $order->refund_accepted_at) === '') {
+                $update['refund_accepted_at'] = date('Y-m-d H:i:s');
+            }
+        }
+
+        $this->orderDao->update($order->id, $update);
+        $this->dispatcher->dispatch(new OrderBecameRefunded($order->id));
+
+        $fresh = $this->orderDao->findById($order->id);
+        /** @var Order $fresh */
+
+        return ['ok' => true, 'order' => $fresh];
+    }
+
+    /**
+     * Remboursement total via PayPal Captures API.
+     *
+     * @return array{ok: true, order: Order}|array{ok: false, error: string}
+     */
+    public function refundPaypal(int $orderId): array
+    {
+        $order = $this->requireOrder($orderId);
+        if ($order === null) {
+            return ['ok' => false, 'error' => 'Commande introuvable.'];
+        }
+
+        if ($order->isRefunded()) {
+            return ['ok' => false, 'error' => 'Cette commande est déjà remboursée.'];
+        }
+
+        if (!$order->isPaid()) {
+            return ['ok' => false, 'error' => 'Seule une commande payée peut être remboursée.'];
+        }
+
+        if ($order->payment_method !== Order::PAYMENT_PAYPAL) {
+            return ['ok' => false, 'error' => 'Utilisez « Marquer remboursée » pour un paiement offline.'];
+        }
+
+        $returnBlock = $this->returnBlockMessage($order);
+        if ($returnBlock !== null) {
+            return ['ok' => false, 'error' => $returnBlock];
+        }
+
+        $captureId = trim((string) ($order->paypal_capture_id ?? ''));
+        if ($captureId === '') {
+            return ['ok' => false, 'error' => 'Aucun capture PayPal sur cette commande.'];
+        }
+
+        try {
+            $this->paypalService->refundCapture($captureId);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => 'PayPal a refusé le remboursement : ' . $e->getMessage()];
         }
 
         $update = [

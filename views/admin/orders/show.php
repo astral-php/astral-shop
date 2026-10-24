@@ -109,6 +109,12 @@ $storeName = (string) ($shop['store_name'] ?? 'Boutique');
                 <?php if ($order->stripe_intent_id): ?>
                     <br>Stripe : <code style="font-size:0.78rem"><?= htmlspecialchars($order->stripe_intent_id, ENT_QUOTES, 'UTF-8') ?></code>
                 <?php endif ?>
+                <?php if ($order->paypal_order_id): ?>
+                    <br>PayPal : <code style="font-size:0.78rem"><?= htmlspecialchars($order->paypal_order_id, ENT_QUOTES, 'UTF-8') ?></code>
+                    <?php if ($order->paypal_capture_id): ?>
+                        · capture <code style="font-size:0.78rem"><?= htmlspecialchars($order->paypal_capture_id, ENT_QUOTES, 'UTF-8') ?></code>
+                    <?php endif ?>
+                <?php endif ?>
                 <?php if ($order->isRefunded() && $order->refunded_at): ?>
                     <br>Remboursée le <?= htmlspecialchars($order->refunded_at, ENT_QUOTES, 'UTF-8') ?>
                 <?php endif ?>
@@ -281,6 +287,8 @@ $storeName = (string) ($shop['store_name'] ?? 'Boutique');
                 </form>
             <?php elseif ($order->isPending() && $order->payment_method === \App\Models\Order::PAYMENT_CARD): ?>
                 <p class="order-actions-card__hint">Paiement carte : en attente de confirmation Stripe.</p>
+            <?php elseif ($order->isPending() && $order->payment_method === \App\Models\Order::PAYMENT_PAYPAL): ?>
+                <p class="order-actions-card__hint">Paiement PayPal : en attente d’approbation / capture.</p>
             <?php else: ?>
                 <p class="order-actions-card__hint">Aucune action disponible.</p>
             <?php endif ?>
@@ -380,17 +388,25 @@ $storeName = (string) ($shop['store_name'] ?? 'Boutique');
                 <?php elseif ($order->hasRefundRequestPending()): ?>
                     <p class="order-actions-card__hint" style="margin-bottom:0.75rem">
                         Demande client en attente —
-                        <?= $order->payment_method === \App\Models\Order::PAYMENT_CARD
-                            ? 'accepter déclenche le remboursement Stripe.'
-                            : 'accepter puis effectuer le virement sortant.' ?>
+                        <?php
+                        $acceptHint = match ($order->payment_method) {
+                            \App\Models\Order::PAYMENT_CARD   => 'accepter déclenche le remboursement Stripe.',
+                            \App\Models\Order::PAYMENT_PAYPAL => 'accepter déclenche le remboursement PayPal.',
+                            default                           => 'accepter puis effectuer le virement sortant.',
+                        };
+                        $acceptBtn = match ($order->payment_method) {
+                            \App\Models\Order::PAYMENT_CARD   => 'Accepter et rembourser (Stripe)',
+                            \App\Models\Order::PAYMENT_PAYPAL => 'Accepter et rembourser (PayPal)',
+                            default                           => 'Accepter la demande',
+                        };
+                        ?>
+                        <?= $acceptHint ?>
                     </p>
                     <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/accept-refund-request"
                           onsubmit="return confirm('Accepter cette demande de remboursement ?');">
                         <?= $csrf->field() ?>
                         <button type="submit" class="btn btn-primary order-actions-card__btn">
-                            <?= $order->payment_method === \App\Models\Order::PAYMENT_CARD
-                                ? 'Accepter et rembourser (Stripe)'
-                                : 'Accepter la demande' ?>
+                            <?= htmlspecialchars($acceptBtn, ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </form>
                     <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/reject-refund-request"
@@ -448,6 +464,18 @@ $storeName = (string) ($shop['store_name'] ?? 'Boutique');
                         <?= $csrf->field() ?>
                         <button type="submit" class="btn btn-primary order-actions-card__btn">
                             Rembourser via Stripe
+                        </button>
+                    </form>
+                    <p class="order-actions-card__hint" style="margin-top:0.5rem">
+                        Remboursement total sans demande client (geste commercial).
+                    </p>
+
+                <?php elseif ($order->payment_method === \App\Models\Order::PAYMENT_PAYPAL): ?>
+                    <form method="POST" action="/admin/orders/<?= (int) $order->id ?>/refund"
+                          onsubmit="return confirm('Rembourser intégralement cette commande via PayPal ?');">
+                        <?= $csrf->field() ?>
+                        <button type="submit" class="btn btn-primary order-actions-card__btn">
+                            Rembourser via PayPal
                         </button>
                     </form>
                     <p class="order-actions-card__hint" style="margin-top:0.5rem">

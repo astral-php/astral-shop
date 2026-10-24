@@ -87,15 +87,17 @@ final class SendRefundConfirmationEmail implements ListenerInterface
         $base   = rtrim($this->appBaseUrl, '/');
         $link   = $base !== '' ? $base . '/orders/' . $order->id : '/orders/' . $order->id;
 
-        $methodNote = $order->payment_method === Order::PAYMENT_CARD
-            ? '<p>Le remboursement a été initié sur votre carte bancaire. Selon votre banque, le crédit peut prendre quelques jours ouvrés.</p>'
-            : '<p>Le remboursement sera effectué par virement vers le RIB communiqué'
-              . ($order->hasRefundRib()
-                  ? ' (IBAN se terminant par <strong>'
-                    . htmlspecialchars(substr($order->refund_iban, -4), ENT_QUOTES, 'UTF-8')
-                    . '</strong>)'
-                  : '')
-              . '.</p>';
+        $methodNote = match ($order->payment_method) {
+            Order::PAYMENT_CARD => '<p>Le remboursement a été initié sur votre carte bancaire. Selon votre banque, le crédit peut prendre quelques jours ouvrés.</p>',
+            Order::PAYMENT_PAYPAL => '<p>Le remboursement a été initié sur votre compte PayPal. Selon PayPal, le crédit peut prendre quelques jours ouvrés.</p>',
+            default => '<p>Le remboursement sera effectué par virement vers le RIB communiqué'
+                . ($order->hasRefundRib()
+                    ? ' (IBAN se terminant par <strong>'
+                      . htmlspecialchars(substr($order->refund_iban, -4), ENT_QUOTES, 'UTF-8')
+                      . '</strong>)'
+                    : '')
+                . '.</p>',
+        };
 
         $ref = trim($order->refund_reference) !== ''
             ? '<p style="font-size:14px">Référence : <strong>'

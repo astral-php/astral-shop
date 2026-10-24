@@ -52,7 +52,7 @@ return [
 
     // Moyens de paiement (étape 4) — instructions offline
     'payment' => [
-        'methods' => ['card', 'transfer', 'check'],
+        'methods' => ['card', 'paypal', 'transfer', 'check'],
         /** Délai pour régler chèque / virement (jours) — réserve stock jusqu’à échéance. */
         'offline_payment_days' => max(1, (int) ($_ENV['SHOP_OFFLINE_PAYMENT_DAYS'] ?? 7)),
         'transfer' => [

@@ -15,6 +15,8 @@ use App\Controllers\InstallController;
 use App\Controllers\LegalController;
 use App\Controllers\OrderController;
 use App\Controllers\PaymentCheckoutController;
+use App\Controllers\PaypalCheckoutController;
+use App\Controllers\PaypalWebhookController;
 use App\Controllers\ProfileController;
 use App\Controllers\UserController;
 use App\Middleware\RequireInstalledMiddleware;
@@ -35,6 +37,9 @@ return function (Router $router): void {
     // Webhook Stripe — signature HMAC, hors install gate
     $router->post('/webhooks/stripe', WebhookController::class, 'handle')
         ->middleware(StripeWebhookMiddleware::class);
+
+    // Webhook PayPal — verify-webhook-signature, hors CSRF
+    $router->post('/webhooks/paypal', PaypalWebhookController::class, 'handle');
 
     $router->group('', function (Router $router): void {
 
@@ -96,6 +101,10 @@ return function (Router $router): void {
             $r->get('/payment/checkout', PaymentCheckoutController::class, 'checkout');
             $r->get('/payment/success',  PaymentCheckoutController::class, 'success');
             $r->get('/payment/cancel',   PaymentCheckoutController::class, 'cancel');
+
+            $r->get('/payment/paypal',        PaypalCheckoutController::class, 'start');
+            $r->get('/payment/paypal/return', PaypalCheckoutController::class, 'returnFromPaypal');
+            $r->get('/payment/paypal/cancel', PaypalCheckoutController::class, 'cancel');
         }, [AuthMiddleware::class, CsrfMiddleware::class]);
 
         $router->group('', function (Router $r): void {

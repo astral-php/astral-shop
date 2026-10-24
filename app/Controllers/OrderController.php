@@ -9,6 +9,7 @@ use App\Dao\OrderItemDao;
 use App\Models\Order;
 use App\Services\InvoiceService;
 use App\Services\OrderFulfillmentService;
+use App\Services\PaypalPaymentSyncService;
 use App\Services\StripePaymentSyncService;
 use AstralShipping\Dao\OrderShipmentDao;
 use Controller\AbstractController;
@@ -35,6 +36,7 @@ final class OrderController extends AbstractController
         private OrderShipmentDao $shipmentDao,
         private InvoiceService $invoices,
         private StripePaymentSyncService $stripeSync,
+        private PaypalPaymentSyncService $paypalSync,
         private OrderFulfillmentService $fulfillment,
         private array $shop = [],
     ) {
@@ -165,6 +167,9 @@ final class OrderController extends AbstractController
 
         if (!$order->isPaid() && $order->payment_method === Order::PAYMENT_CARD) {
             $order = $this->stripeSync->confirmIfSucceeded($order);
+        }
+        if (!$order->isPaid() && $order->payment_method === Order::PAYMENT_PAYPAL) {
+            $order = $this->paypalSync->captureAndConfirm($order);
         }
 
         return JsonResponse::make([

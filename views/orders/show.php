@@ -193,6 +193,18 @@ $storeAddress = trim((string) ($shop['store_address'] ?? ''));
                         Changer de moyen
                     </a>
                 </div>
+            <?php elseif ($order->payment_method === \App\Models\Order::PAYMENT_PAYPAL): ?>
+                <p style="color:var(--muted);font-size:0.9rem;margin:0 0 0.75rem">
+                    Finalisez le paiement PayPal, ou changez de moyen.
+                </p>
+                <div style="display:flex;flex-wrap:wrap;gap:0.65rem">
+                    <a class="btn btn-primary" href="/payment/paypal?order_id=<?= (int) $order->id ?>">
+                        Continuer avec PayPal
+                    </a>
+                    <a class="btn btn-ghost" href="/checkout/change-payment/<?= (int) $order->id ?>">
+                        Changer de moyen
+                    </a>
+                </div>
             <?php else: ?>
                 <a class="btn btn-primary" href="/checkout/instructions/<?= (int) $order->id ?>">
                     Voir les instructions de paiement

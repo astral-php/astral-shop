@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Providers\AppServiceProvider;
 use Astral\Template\TemplateServiceProvider;
 use AstralPayment\PaymentServiceProvider;
+use AstralPaypal\PaypalServiceProvider;
 use AstralShipping\ShippingServiceProvider;
 use Core\Providers\DatabaseServiceProvider;
 use Core\Providers\FrameworkServiceProvider;
@@ -16,4 +17,5 @@ return [
     ShippingServiceProvider::class,
     AppServiceProvider::class,
     PaymentServiceProvider::class,
+    PaypalServiceProvider::class,
 ];

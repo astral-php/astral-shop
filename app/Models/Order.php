@@ -9,6 +9,7 @@ use App\Support\Money;
 final class Order
 {
     public const PAYMENT_CARD     = 'card';
+    public const PAYMENT_PAYPAL   = 'paypal';
     public const PAYMENT_TRANSFER = 'transfer';
     public const PAYMENT_CHECK    = 'check';
 
@@ -32,13 +33,15 @@ final class Order
 
     public const STATUS_CANCELLED = 'cancelled';
 
-    /** card | transfer | check */
+    /** card | paypal | transfer | check */
     public string $payment_method = self::PAYMENT_CARD;
 
     /** awaiting | preparing | shipped */
     public string $fulfillment_status = self::FULFILLMENT_AWAITING;
 
     public ?string $stripe_intent_id = null;
+    public ?string $paypal_order_id = null;
+    public ?string $paypal_capture_id = null;
     public string $shipping_name = '';
     public string $shipping_line1 = '';
     public string $shipping_postal = '';
@@ -312,6 +315,7 @@ final class Order
         return match ($this->payment_method) {
             self::PAYMENT_TRANSFER => 'Virement',
             self::PAYMENT_CHECK    => 'Chèque',
+            self::PAYMENT_PAYPAL   => 'PayPal',
             default                => 'Carte',
         };
     }

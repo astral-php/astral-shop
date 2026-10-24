@@ -54,7 +54,12 @@ final class CheckoutService
         ShippingSelection $selection,
         ?array $billing = null,
     ): array {
-        $allowedMethods = [Order::PAYMENT_CARD, Order::PAYMENT_TRANSFER, Order::PAYMENT_CHECK];
+        $allowedMethods = [
+            Order::PAYMENT_CARD,
+            Order::PAYMENT_PAYPAL,
+            Order::PAYMENT_TRANSFER,
+            Order::PAYMENT_CHECK,
+        ];
         if (!in_array($paymentMethod, $allowedMethods, true)) {
             return ['ok' => false, 'error' => 'Moyen de paiement invalide.'];
         }

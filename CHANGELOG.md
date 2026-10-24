@@ -5,6 +5,18 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
+## [1.1.1] — 2026-10-23
+
+### Ajouté
+- Paiement **PayPal** (`astral-php/astral-paypal` ^0.1) — Orders v2 redirect + capture.
+- `payment_method = paypal` au checkout (si clés sandbox/live configurées).
+- Colonnes `paypal_order_id` / `paypal_capture_id` + webhook `POST /webhooks/paypal`.
+- Remboursement admin PayPal (capture refund) + sync return URL.
+
+### Notes
+- Dépendance Packagist `astral-php/astral-paypal` **^0.1** (QA sandbox paiement + refund OK).
+- Hub / news → **1.2.7.1**.
+
 ## [1.1.0] — 2026-10-23
 
 ### Ajouté
@@ -16,7 +28,7 @@ et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 - Affichage point relais sur fiches commande (client / admin).
 
 ### Notes
-- PayPal → **1.1.1** · Sendcloud / API étiquettes transporteur → plus tard.
+- PayPal livré en **1.1.1** · Sendcloud / API étiquettes transporteur → plus tard.
 - QA manuelle §5.2 / 5.3 (`astral-informations` `Roadmap/test.md`) OK.
 - Hérité du squelette starter (auth, layout) — ce changelog ne reprend pas les versions starter.
 

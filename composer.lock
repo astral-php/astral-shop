@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "65c0ee2adc70916d1bb5c66d53f5434b",
+    "content-hash": "f23e12e8e7f39d894ecf57fedf5ba8ae",
     "packages": [
         {
             "name": "astral-php/astral-core",
@@ -118,6 +118,66 @@
                 "source": "https://github.com/astral-php/astral-payment"
             },
             "time": "2026-10-15T13:58:46+00:00"
+        },
+        {
+            "name": "astral-php/astral-paypal",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-paypal.git",
+                "reference": "fec08b7195aa83a93a912db223411b0b742958d1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/astral-php/astral-paypal/zipball/fec08b7195aa83a93a912db223411b0b742958d1",
+                "reference": "fec08b7195aa83a93a912db223411b0b742958d1",
+                "shasum": ""
+            },
+            "require": {
+                "astral-php/astral-core": "^1.2",
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.0 || ^11.0"
+            },
+            "type": "library",
+            "extra": {
+                "astral-paypal": {
+                    "stubs": "stubs"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AstralPaypal\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "astral-php",
+                    "homepage": "https://github.com/astral-php"
+                }
+            ],
+            "description": "Paiement PayPal pour Astral — Orders API v2, capture, webhooks, remboursements",
+            "homepage": "https://github.com/astral-php/astral-paypal",
+            "keywords": [
+                "astral",
+                "checkout",
+                "payment",
+                "paypal",
+                "php",
+                "webhook"
+            ],
+            "support": {
+                "issues": "https://github.com/astral-php/astral-paypal/issues",
+                "source": "https://github.com/astral-php/astral-paypal"
+            },
+            "time": "2026-10-23T15:37:37+00:00"
         },
         {
             "name": "astral-php/astral-shipping",

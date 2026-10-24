@@ -17,6 +17,8 @@ use App\Controllers\InstallController;
 use App\Controllers\LegalController;
 use App\Controllers\OrderController;
 use App\Controllers\PaymentCheckoutController;
+use App\Controllers\PaypalCheckoutController;
+use App\Controllers\PaypalWebhookController;
 use App\Controllers\ProfileController;
 use App\Controllers\UserController;
 use App\Support\ProductImageUploader;
@@ -29,6 +31,7 @@ use App\Services\CancelledOrderPurgeService;
 use App\Services\CartService;
 use App\Services\CheckoutService;
 use App\Services\OrderStockService;
+use App\Services\PaypalPaymentSyncService;
 use App\Services\StripePaymentSyncService;
 use App\Events\OrderBecamePaid;
 use App\Events\OrderBecameRefunded;
@@ -55,6 +58,7 @@ use App\Services\OrderFulfillmentService;
 use AstralPayment\Events\PaymentRefunded;
 use AstralPayment\Events\PaymentSucceeded;
 use AstralPayment\PaymentService;
+use AstralPaypal\PaypalService;
 use AstralShipping\Dao\OrderShipmentDao;
 use AstralShipping\Service\ShippingService;
 use Core\Auth\Auth;
@@ -199,6 +203,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             orderDao:        $c->make(OrderDao::class),
             dispatcher:      $c->make(EventDispatcher::class),
             paymentService:  $c->make(PaymentService::class),
+            paypalService:   $c->make(PaypalService::class),
             returnDays:      max(1, (int) (($shopConfig['legal']['return_days'] ?? 14))),
         ));
 
@@ -305,6 +310,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             shippingService: $c->make(ShippingService::class),
             orderDao:        $c->make(OrderDao::class),
             userDao:         $c->make(UserDao::class),
+            paypal:          $c->make(PaypalService::class),
             shop:            $shopConfig,
         ));
 
@@ -313,6 +319,13 @@ final class AppServiceProvider implements ServiceProviderInterface
             paymentService: $c->make(PaymentService::class),
             dispatcher:     $c->make(EventDispatcher::class),
             logger:         $c->make(Logger::class),
+        ));
+
+        $container->singleton(PaypalPaymentSyncService::class, fn (Container $c) => new PaypalPaymentSyncService(
+            orderDao:   $c->make(OrderDao::class),
+            paypal:     $c->make(PaypalService::class),
+            dispatcher: $c->make(EventDispatcher::class),
+            logger:     $c->make(Logger::class),
         ));
 
         $container->bind(OrderController::class, fn (Container $c) => new OrderController(
@@ -325,6 +338,7 @@ final class AppServiceProvider implements ServiceProviderInterface
             shipmentDao:  $c->make(OrderShipmentDao::class),
             invoices:     $c->make(InvoiceService::class),
             stripeSync:   $c->make(StripePaymentSyncService::class),
+            paypalSync:   $c->make(PaypalPaymentSyncService::class),
             fulfillment:  $c->make(OrderFulfillmentService::class),
             shop:         $shopConfig,
         ));
@@ -338,6 +352,27 @@ final class AppServiceProvider implements ServiceProviderInterface
             paymentService: $c->make(PaymentService::class),
             stripeSync:     $c->make(StripePaymentSyncService::class),
             shop:           $shopConfig,
+        ));
+
+        $container->bind(PaypalCheckoutController::class, fn (Container $c) => new PaypalCheckoutController(
+            view:       $c->make(View::class),
+            request:    $c->make(Request::class),
+            session:    $c->make(Session::class),
+            auth:       $c->make(Auth::class),
+            orderDao:   $c->make(OrderDao::class),
+            paypal:     $c->make(PaypalService::class),
+            paypalSync: $c->make(PaypalPaymentSyncService::class),
+            logger:     $c->make(Logger::class),
+            shop:       $shopConfig,
+        ));
+
+        $container->bind(PaypalWebhookController::class, fn (Container $c) => new PaypalWebhookController(
+            request:    $c->make(Request::class),
+            paypal:     $c->make(PaypalService::class),
+            orderDao:   $c->make(OrderDao::class),
+            paypalSync: $c->make(PaypalPaymentSyncService::class),
+            dispatcher: $c->make(EventDispatcher::class),
+            logger:     $c->make(Logger::class),
         ));
 
         $container->bind(UserController::class, fn (Container $c) => new UserController(
