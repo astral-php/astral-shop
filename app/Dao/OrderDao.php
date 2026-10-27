@@ -104,6 +104,64 @@ final class OrderDao extends AbstractDao
     }
 
     /**
+     * Passe stock_applied 0 → 1 une seule fois (course-safe).
+     */
+    public function tryMarkStockApplied(int $orderId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE {$this->getTable()}
+             SET stock_applied = 1
+             WHERE id = :id AND stock_applied = 0",
+        );
+        $stmt->execute([':id' => $orderId]);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    /**
+     * Passe stock_applied 1 → 0 une seule fois (course-safe).
+     */
+    public function tryClearStockApplied(int $orderId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "UPDATE {$this->getTable()}
+             SET stock_applied = 0
+             WHERE id = :id AND stock_applied = 1",
+        );
+        $stmt->execute([':id' => $orderId]);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    /**
+     * Marque paid une seule fois. Retourne false si déjà paid / cancelled / refunded.
+     *
+     * @param array<string, scalar|null> $extra Colonnes additionnelles (ex. paypal_capture_id)
+     */
+    public function tryMarkPaid(int $orderId, array $extra = []): bool
+    {
+        $sets = ["status = 'paid'"];
+        $params = [':id' => $orderId];
+
+        foreach ($extra as $column => $value) {
+            if (!preg_match('/^[a-z_]+$/', $column)) {
+                continue;
+            }
+            $sets[] = "{$column} = :{$column}";
+            $params[":{$column}"] = $value;
+        }
+
+        $sql = 'UPDATE ' . $this->getTable()
+            . ' SET ' . implode(', ', $sets)
+            . " WHERE id = :id AND status NOT IN ('paid', 'cancelled', 'refunded')";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    /**
      * Toutes les commandes (admin), client joint.
      *
      * @param ?string $paymentStatus       pending|paid|failed|refunded (colonne status)

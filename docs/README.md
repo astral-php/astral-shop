@@ -8,6 +8,7 @@
 |---------|------|
 | [Installation/guide-install-pas-a-pas.md](./Installation/guide-install-pas-a-pas.md) | Install technique : clone, `.env`, migrate, `/install`, Stripe, smoke |
 | [Installation/ouvrir-une-boutique-fr.md](./Installation/ouvrir-une-boutique-fr.md) | **Moteur vs marchand**, cadre légal, checklist avant ouverture |
+| [Installation/production-checklist.md](./Installation/production-checklist.md) | Prod 1.5 : OPcache, secrets, worker cron, Redis/cache |
 
 > Astral Shop fournit le **moteur**. L’identité légale, les textes, les paiements et le port sont à établir par la personne qui ouvre la boutique — détail dans `ouvrir-une-boutique-fr.md` §0.
 

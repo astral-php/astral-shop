@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Providers\AppServiceProvider;
 use Astral\Template\TemplateServiceProvider;
+use Astral\Worker\WorkerServiceProvider;
 use AstralPayment\PaymentServiceProvider;
 use AstralPaypal\PaypalServiceProvider;
 use AstralShipping\ShippingServiceProvider;
@@ -18,4 +19,5 @@ return [
     AppServiceProvider::class,
     PaymentServiceProvider::class,
     PaypalServiceProvider::class,
+    WorkerServiceProvider::class, // après App (Mailer) + Database (PDO)
 ];

@@ -5,6 +5,33 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
+## [1.5.0] — 2026-10-27
+
+### Ajouté
+- File d'attente **`astral-php/astral-worker` ^0.1** : jobs facture PDF + e-mail confirmation hors requête HTTP.
+- `QUEUE_DRIVER=database` (défaut) · `sync` en PHPUnit · Redis documenté en opt-in Laragon.
+- Commandes `worker:work`, `queue:failed`, `queue:retry`, `queue:flush`.
+- Tables `jobs` / `failed_jobs` (migrations).
+
+### Sécurité / cohérence
+- Stock : `tryMarkStockApplied` + `UPDATE … WHERE stock >= qty` (anti-survente).
+- Paiement : `tryMarkPaid` (Stripe sync, PayPal, admin offline) + webhook Stripe shop idempotent.
+
+### Refactor
+- `CheckoutController` allégé : `CheckoutAddressService`, `CheckoutSessionStore`, `CheckoutShippingResolver`, `CheckoutPaymentOptions` (mêmes routes ; place order = `CheckoutService`).
+
+### Cache
+- Lecture catalogue / home : `CatalogReadCache` + `CACHE_DRIVER=file|redis` (fallback file si Redis/ext absents).
+- Invalidation admin produit / catégorie ; fiche produit et checkout **non** cachés.
+
+### Production
+- Doc `docs/Installation/production-checklist.md` (OPcache, secrets, cron worker / expire-offline).
+- Commande `shop:check-production` (warnings démo / debug / Redis).
+
+### Notes
+- Campagne QA `Roadmap/test.md` §14 OK (2026-10-26/27).
+- Hub doc **1.2.8** après `astral-testing` 0.1 (file Astral).
+
 ## [1.1.1] — 2026-10-23
 
 ### Ajouté

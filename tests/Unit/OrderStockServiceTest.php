@@ -110,4 +110,45 @@ final class OrderStockServiceTest extends TestCase
         $this->assertSame(3, (int) $this->productDao->findById(10)?->stock);
         $this->assertSame(0, (int) $order?->stock_applied);
     }
+
+    public function testApplyFailsWhenStockInsufficientAndRollsBackFlag(): void
+    {
+        $this->pdo->exec('UPDATE products SET stock = 0 WHERE id = 10');
+        $this->pdo->exec(
+            "INSERT INTO orders (id, user_id, total_cents, status, payment_method, stock_applied)
+             VALUES (2, 1, 2000, 'pending', 'card', 0)",
+        );
+        $this->pdo->exec(
+            "INSERT INTO order_items (order_id, product_id, product_name, unit_price_cents, quantity, line_total_cents)
+             VALUES (2, 10, 'Tee', 2000, 1, 2000)",
+        );
+
+        try {
+            $this->stock->applyReservation(2);
+            $this->fail('RuntimeException attendue (stock insuffisant)');
+        } catch (\RuntimeException) {
+            $order = $this->orderDao->findById(2);
+            $this->assertSame(0, (int) $order?->stock_applied);
+            $this->assertSame(0, (int) $this->productDao->findById(10)?->stock);
+        }
+    }
+
+    public function testLastUnitOnlyOneOrderGetsStock(): void
+    {
+        $this->pdo->exec('UPDATE products SET stock = 1 WHERE id = 10');
+        $this->pdo->exec(
+            "INSERT INTO orders (id, user_id, total_cents, status, payment_method, stock_applied)
+             VALUES (2, 1, 2000, 'pending', 'card', 0)",
+        );
+        $this->pdo->exec(
+            "INSERT INTO order_items (order_id, product_id, product_name, unit_price_cents, quantity, line_total_cents)
+             VALUES (2, 10, 'Tee', 2000, 1, 2000)",
+        );
+
+        $this->assertTrue($this->stock->applyReservation(1));
+        $this->assertSame(0, (int) $this->productDao->findById(10)?->stock);
+
+        $this->expectException(\RuntimeException::class);
+        $this->stock->applyReservation(2);
+    }
 }

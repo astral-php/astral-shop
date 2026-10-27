@@ -7,15 +7,13 @@ namespace App\Controllers;
 use App\Dao\OrderDao;
 use App\Dao\UserDao;
 use App\Models\Order;
-use App\Models\User;
 use App\Services\CartService;
+use App\Services\Checkout\CheckoutAddressService;
+use App\Services\Checkout\CheckoutPaymentOptions;
+use App\Services\Checkout\CheckoutSessionStore;
+use App\Services\Checkout\CheckoutShippingResolver;
 use App\Services\CheckoutService;
-use AstralPaypal\PaypalService;
 use AstralShipping\Exception\InvalidSelectionException;
-use AstralShipping\Models\Address;
-use AstralShipping\Models\ShippingContext;
-use AstralShipping\Models\ShippingSelection;
-use AstralShipping\Service\ShippingService;
 use Controller\AbstractController;
 use Core\Auth\Auth;
 use Core\Auth\Role;
@@ -26,17 +24,11 @@ use Core\Session;
 use Core\View;
 
 /**
- * Tunnel boutique : panier → adresse → livraison → moyen de paiement → engagement.
- * La commande n’est créée qu’à l’engagement (carte / virement / chèque).
+ * Tunnel boutique HTTP : panier → adresse → livraison → paiement → engagement.
+ * Métier : CheckoutService + services Checkout\* (adresses / session / shipping / options).
  */
 final class CheckoutController extends AbstractController
 {
-    private const SESSION_SHIPPING = 'checkout.shipping';
-    private const SESSION_BILLING = 'checkout.billing';
-    private const SESSION_METHOD = 'checkout.shipping_method';
-    private const SESSION_PICKUP = 'checkout.pickup_point';
-    private const SESSION_PENDING = 'checkout.pending_order_id';
-
     /** @param array<string, mixed> $shop */
     public function __construct(
         View $view,
@@ -45,10 +37,12 @@ final class CheckoutController extends AbstractController
         private Auth $auth,
         private CartService $cart,
         private CheckoutService $checkout,
-        private ShippingService $shippingService,
+        private CheckoutSessionStore $checkoutSession,
+        private CheckoutAddressService $addresses,
+        private CheckoutShippingResolver $shipping,
+        private CheckoutPaymentOptions $paymentOptions,
         private OrderDao $orderDao,
         private UserDao $userDao,
-        private PaypalService $paypal,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -61,15 +55,19 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/panier');
         }
 
-        $old = array_merge($this->defaultAddressOld(), $this->sessionShipping(), $this->sessionBilling());
+        $old = array_merge(
+            $this->addresses->defaultFormValues((int) $this->auth->id(), $this->auth->name()),
+            $this->checkoutSession->shipping(),
+            $this->checkoutSession->billing(),
+        );
 
         return $this->render('checkout/show', [
-            'title' => 'Identification',
-            'shop' => $this->shop,
-            'lines' => $this->cart->lines(),
-            'total' => $this->cart->totalCents(),
+            'title'  => 'Identification',
+            'shop'   => $this->shop,
+            'lines'  => $this->cart->lines(),
+            'total'  => $this->cart->totalCents(),
             'errors' => [],
-            'old' => $old,
+            'old'    => $old,
         ]);
     }
 
@@ -82,84 +80,47 @@ final class CheckoutController extends AbstractController
         }
 
         $billingSame = $this->isCheckedFlag('billing_same_as_shipping', true);
-
-        $shipping = [
-            'shipping_name' => trim((string) $this->request->input('shipping_name', '')),
-            'shipping_line1' => trim((string) $this->request->input('shipping_line1', '')),
-            'shipping_postal' => trim((string) $this->request->input('shipping_postal', '')),
-            'shipping_city' => trim((string) $this->request->input('shipping_city', '')),
-            'shipping_country' => strtoupper(trim((string) $this->request->input('shipping_country', 'FR'))),
-        ];
-
-        if ($billingSame) {
-            $billing = [
-                'billing_name' => $shipping['shipping_name'],
-                'billing_line1' => $shipping['shipping_line1'],
-                'billing_postal' => $shipping['shipping_postal'],
-                'billing_city' => $shipping['shipping_city'],
-                'billing_country' => $shipping['shipping_country'],
-                'billing_same_as_shipping' => '1',
-            ];
-        } else {
-            $billing = [
-                'billing_name' => trim((string) $this->request->input('billing_name', '')),
-                'billing_line1' => trim((string) $this->request->input('billing_line1', '')),
-                'billing_postal' => trim((string) $this->request->input('billing_postal', '')),
-                'billing_city' => trim((string) $this->request->input('billing_city', '')),
-                'billing_country' => strtoupper(trim((string) $this->request->input('billing_country', 'FR'))),
-                'billing_same_as_shipping' => '0',
-            ];
-        }
-
-        $errors = $this->validateAddressBlock($shipping, 'shipping');
-        if (!$billingSame) {
-            $errors = array_merge($errors, $this->validateAddressBlock($billing, 'billing'));
-        }
-
+        /** @var array<string, mixed> $post */
+        $post = $this->request->post();
+        $parsed = $this->addresses->parseAndValidateFromInput($post, $billingSame);
+        $shipping = $parsed['shipping'];
+        $billing = $parsed['billing'];
+        $errors = $parsed['errors'];
         $old = array_merge($shipping, $billing);
 
         if ($errors !== []) {
             return $this->render('checkout/show', [
-                'title' => 'Identification',
-                'shop' => $this->shop,
-                'lines' => $this->cart->lines(),
-                'total' => $this->cart->totalCents(),
+                'title'  => 'Identification',
+                'shop'   => $this->shop,
+                'lines'  => $this->cart->lines(),
+                'total'  => $this->cart->totalCents(),
                 'errors' => $errors,
-                'old' => $old,
+                'old'    => $old,
             ]);
         }
 
-        $this->session->set(self::SESSION_SHIPPING, $shipping);
-        $this->session->set(self::SESSION_BILLING, [
-            'billing_name' => $billing['billing_name'],
-            'billing_line1' => $billing['billing_line1'],
-            'billing_postal' => $billing['billing_postal'],
-            'billing_city' => $billing['billing_city'],
-            'billing_country' => $billing['billing_country'],
+        $this->checkoutSession->setShipping($shipping);
+        $this->checkoutSession->setBilling([
+            'billing_name'             => $billing['billing_name'],
+            'billing_line1'            => $billing['billing_line1'],
+            'billing_postal'             => $billing['billing_postal'],
+            'billing_city'             => $billing['billing_city'],
+            'billing_country'          => $billing['billing_country'],
             'billing_same_as_shipping' => $billingSame ? '1' : '0',
         ]);
-        $this->session->forget(self::SESSION_METHOD);
+        $this->checkoutSession->forgetMethod();
 
         if ($this->isCheckedFlag('save_to_profile', false)) {
-            $this->userDao->updateAddresses((int) $this->auth->id(), [
-                'shipping_name' => $shipping['shipping_name'],
-                'shipping_line1' => $shipping['shipping_line1'],
-                'shipping_postal' => $shipping['shipping_postal'],
-                'shipping_city' => $shipping['shipping_city'],
-                'shipping_country' => $shipping['shipping_country'],
-                'billing_same_as_shipping' => $billingSame ? 1 : 0,
-                'billing_name' => $billing['billing_name'],
-                'billing_line1' => $billing['billing_line1'],
-                'billing_postal' => $billing['billing_postal'],
-                'billing_city' => $billing['billing_city'],
-                'billing_country' => $billing['billing_country'],
-            ]);
+            $this->userDao->updateAddresses(
+                (int) $this->auth->id(),
+                $this->addresses->profilePayload($shipping, $billing, $billingSame),
+            );
         }
 
         return $this->redirect('/checkout/shipping');
     }
 
-    /** GET offres de livraison (forfait FR + retrait). */
+    /** GET offres de livraison. */
     public function shipping(): Response
     {
         if ($this->cart->isEmpty()) {
@@ -167,33 +128,35 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/panier');
         }
 
-        $address = $this->sessionShipping();
+        $address = $this->checkoutSession->shipping();
         if ($address === []) {
             $this->session->flash('error', 'Indiquez d’abord l’adresse de livraison.');
             return $this->redirect('/checkout');
         }
 
-        $context = $this->shippingContext($address);
-        $quotes = $this->shippingService->quotes($context);
+        $context = $this->shipping->context($address);
+        $quotes = $this->shipping->quotes($address);
 
         if ($quotes === []) {
             $this->session->flash('error', 'Aucune offre de livraison pour cette adresse.');
             return $this->redirect('/checkout');
         }
 
-        $selected = (string) $this->session->get(self::SESSION_METHOD, $quotes[0]->code);
-        $pickup = $this->sessionPickup();
+        $selected = $this->checkoutSession->methodCode() !== ''
+            ? $this->checkoutSession->methodCode()
+            : $quotes[0]->code;
+        $pickup = $this->checkoutSession->pickup();
 
         return $this->render('checkout/shipping', [
-            'title' => 'Livraison',
-            'shop' => $this->shop,
-            'lines' => $this->cart->lines(),
-            'subtotal' => $context->subtotalCents,
-            'quotes' => $quotes,
-            'selected' => $selected,
-            'pickup_point_id' => $pickup['id'] ?? '',
+            'title'              => 'Livraison',
+            'shop'               => $this->shop,
+            'lines'              => $this->cart->lines(),
+            'subtotal'           => $context->subtotalCents,
+            'quotes'             => $quotes,
+            'selected'           => $selected,
+            'pickup_point_id'    => $pickup['id'] ?? '',
             'pickup_point_label' => $pickup['label'] ?? '',
-            'errors' => [],
+            'errors'             => [],
         ]);
     }
 
@@ -205,7 +168,7 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/panier');
         }
 
-        $address = $this->sessionShipping();
+        $address = $this->checkoutSession->shipping();
         if ($address === []) {
             $this->session->flash('error', 'Indiquez d’abord l’adresse de livraison.');
             return $this->redirect('/checkout');
@@ -214,59 +177,59 @@ final class CheckoutController extends AbstractController
         $code = trim((string) $this->request->input('shipping_method', ''));
         $pickupId = trim((string) $this->request->input('pickup_point_id', ''));
         $pickupLabel = trim((string) $this->request->input('pickup_point_label', ''));
-        $context = $this->shippingContext($address);
+        $context = $this->shipping->context($address);
 
         try {
-            $selection = $this->shippingService->select(
-                $context,
+            $selection = $this->shipping->select(
+                $address,
                 $code,
                 $pickupId !== '' ? $pickupId : null,
                 $pickupLabel !== '' ? $pickupLabel : null,
             );
         } catch (InvalidSelectionException $e) {
             return $this->render('checkout/shipping', [
-                'title' => 'Livraison',
-                'shop' => $this->shop,
-                'lines' => $this->cart->lines(),
-                'subtotal' => $context->subtotalCents,
-                'quotes' => $this->shippingService->quotes($context),
-                'selected' => $code,
-                'pickup_point_id' => $pickupId,
+                'title'              => 'Livraison',
+                'shop'               => $this->shop,
+                'lines'              => $this->cart->lines(),
+                'subtotal'           => $context->subtotalCents,
+                'quotes'             => $this->shipping->quotes($address),
+                'selected'           => $code,
+                'pickup_point_id'    => $pickupId,
                 'pickup_point_label' => $pickupLabel,
-                'errors' => ['shipping_method' => [$e->getMessage()]],
+                'errors'             => ['shipping_method' => [$e->getMessage()]],
             ]);
         }
 
-        $this->session->set(self::SESSION_METHOD, $code);
+        $this->checkoutSession->setMethodCode($code);
         if ($selection->pickupPoint !== null) {
-            $this->session->set(self::SESSION_PICKUP, [
-                'id' => $selection->pickupPoint->id,
+            $this->checkoutSession->setPickup([
+                'id'    => $selection->pickupPoint->id,
                 'label' => $selection->pickupPoint->label,
             ]);
         } else {
-            $this->session->forget(self::SESSION_PICKUP);
+            $this->checkoutSession->setPickup(null);
         }
 
         return $this->redirect('/checkout/payment');
     }
 
-    /** GET choix Carte / Virement / Chèque (session uniquement). */
+    /** GET choix moyen de paiement. */
     public function payment(): Response
     {
         if ($this->cart->isEmpty()) {
-            $reopened = $this->tryReopenPendingCardOrder();
+            $reopened = $this->tryReopenPendingOnlineOrder();
             if (!$reopened && $this->cart->isEmpty()) {
                 $this->session->flash('error', 'Votre panier est vide.');
                 return $this->redirect('/panier');
             }
         }
 
-        if ($this->sessionShipping() === []) {
+        if ($this->checkoutSession->shipping() === []) {
             $this->session->flash('error', 'Indiquez d’abord l’adresse de livraison.');
             return $this->redirect('/checkout');
         }
 
-        $selection = $this->resolveSelection();
+        $selection = $this->shipping->resolveSelection();
         if ($selection === null) {
             $this->session->flash('error', 'Choisissez un mode de livraison.');
             return $this->redirect('/checkout/shipping');
@@ -275,26 +238,28 @@ final class CheckoutController extends AbstractController
         $subtotal = $this->cart->totalCents();
 
         return $this->render('checkout/payment', [
-            'title' => 'Paiement',
-            'shop' => $this->shop,
-            'lines' => $this->cart->lines(),
-            'subtotal' => $subtotal,
-            'shipping' => $selection->quote->priceCents,
-            'total' => $this->shippingService->total($subtotal, $selection),
-            'quote' => $selection->quote,
+            'title'              => 'Paiement',
+            'shop'               => $this->shop,
+            'lines'              => $this->cart->lines(),
+            'subtotal'           => $subtotal,
+            'shipping'           => $selection->quote->priceCents,
+            'total'              => $this->shipping->total($subtotal, $selection),
+            'quote'              => $selection->quote,
             'pickup_point_label' => $selection->pickupPoint?->label ?? '',
-            'pickup_point_id' => $selection->pickupPoint?->id ?? '',
-            'methods' => $this->enabledMethods(),
-            'errors' => [],
-            'old' => [
-                'payment_method' => (string) $this->session->get('checkout.payment_method', Order::PAYMENT_CARD),
+            'pickup_point_id'    => $selection->pickupPoint?->id ?? '',
+            'methods'            => $this->paymentOptions->enabledMethods(),
+            'errors'             => [],
+            'old'                => [
+                'payment_method' => $this->checkoutSession->paymentMethod() !== ''
+                    ? $this->checkoutSession->paymentMethod()
+                    : Order::PAYMENT_CARD,
             ],
         ]);
     }
 
     /**
-     * POST engagement : crée la commande en BD.
-     * Carte → Stripe ; virement/chèque → instructions boutique.
+     * POST engagement : crée la commande.
+     * Carte / PayPal → contrôleurs paiement dédiés ; offline → instructions.
      */
     public function confirmPayment(): Response
     {
@@ -303,20 +268,20 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/panier');
         }
 
-        $shipping = $this->sessionShipping();
+        $shipping = $this->checkoutSession->shipping();
         if ($shipping === []) {
             $this->session->flash('error', 'Indiquez d’abord l’adresse de livraison.');
             return $this->redirect('/checkout');
         }
 
-        $selection = $this->resolveSelection();
+        $selection = $this->shipping->resolveSelection();
         if ($selection === null) {
             $this->session->flash('error', 'Choisissez un mode de livraison.');
             return $this->redirect('/checkout/shipping');
         }
 
         $method = trim((string) $this->request->input('payment_method', ''));
-        $enabled = $this->enabledMethods();
+        $enabled = $this->paymentOptions->enabledMethods();
         $acceptCgv = $this->isCheckedFlag('accept_cgv', false);
 
         $paymentErrors = [];
@@ -331,27 +296,26 @@ final class CheckoutController extends AbstractController
             $subtotal = $this->cart->totalCents();
 
             return $this->render('checkout/payment', [
-                'title' => 'Paiement',
-                'shop' => $this->shop,
-                'lines' => $this->cart->lines(),
+                'title'    => 'Paiement',
+                'shop'     => $this->shop,
+                'lines'    => $this->cart->lines(),
                 'subtotal' => $subtotal,
                 'shipping' => $selection->quote->priceCents,
-                'total' => $this->shippingService->total($subtotal, $selection),
-                'quote' => $selection->quote,
-                'methods' => $enabled,
-                'errors' => $paymentErrors,
-                'old' => [
+                'total'    => $this->shipping->total($subtotal, $selection),
+                'quote'    => $selection->quote,
+                'methods'  => $enabled,
+                'errors'   => $paymentErrors,
+                'old'      => [
                     'payment_method' => $method,
                     'accept_cgv'     => $acceptCgv ? '1' : '',
                 ],
             ]);
         }
 
-        $this->cancelPendingCardOrderOnly();
+        $this->cancelPendingOnlineOrderOnly();
+        $this->checkoutSession->setPaymentMethod($method);
 
-        $this->session->set('checkout.payment_method', $method);
-
-        $billing = $this->sessionBillingForOrder($shipping);
+        $billing = $this->addresses->billingForOrder($shipping, $this->checkoutSession->billing());
         $result = $this->checkout->placeOrder((int) $this->auth->id(), $shipping, $method, $selection, $billing);
 
         if ($result['ok'] !== true) {
@@ -362,18 +326,18 @@ final class CheckoutController extends AbstractController
         $order = $result['order'];
 
         if ($method === Order::PAYMENT_CARD) {
-            $this->session->set(self::SESSION_PENDING, $order->id);
+            $this->checkoutSession->setPendingOrderId($order->id);
             $this->session->flash('success', 'Finalisez le paiement par carte.');
             return $this->redirect('/payment/checkout?order_id=' . $order->id);
         }
 
         if ($method === Order::PAYMENT_PAYPAL) {
-            $this->session->set(self::SESSION_PENDING, $order->id);
+            $this->checkoutSession->setPendingOrderId($order->id);
             $this->session->flash('success', 'Finalisez le paiement avec PayPal.');
             return $this->redirect('/payment/paypal?order_id=' . $order->id);
         }
 
-        $this->clearCheckoutSession();
+        $this->checkoutSession->clear();
         $this->session->flash(
             'success',
             'Commande confirmée — suivez les instructions ci-dessous pour régler (paiement validé à réception).'
@@ -381,7 +345,6 @@ final class CheckoutController extends AbstractController
         return $this->redirect('/checkout/instructions/' . $order->id);
     }
 
-    /** Instructions virement / chèque (tunnel boutique). */
     public function instructions(string $id): Response
     {
         $order = $this->findOwnedOrder((int) $id);
@@ -408,12 +371,11 @@ final class CheckoutController extends AbstractController
 
         return $this->render('checkout/instructions', [
             'title' => 'Commande confirmée #' . $order->id,
-            'shop' => $this->shop,
+            'shop'  => $this->shop,
             'order' => $order,
         ]);
     }
 
-    /** Annule un pending et revient au choix du moyen (depuis Stripe cancel ou lien client). */
     public function changePayment(string $id): Response
     {
         $order = $this->findOwnedOrder((int) $id);
@@ -432,25 +394,25 @@ final class CheckoutController extends AbstractController
             return $this->redirect('/orders/' . $order->id);
         }
 
-        $this->session->set(self::SESSION_SHIPPING, $result['shipping']);
-        $this->session->set(self::SESSION_BILLING, array_merge($result['billing'], [
-            'billing_same_as_shipping' => $this->addressesEqual($result['shipping'], $result['billing']) ? '1' : '0',
+        $this->checkoutSession->setShipping($result['shipping']);
+        $this->checkoutSession->setBilling(array_merge($result['billing'], [
+            'billing_same_as_shipping' => $this->addresses->addressesEqual($result['shipping'], $result['billing']) ? '1' : '0',
         ]));
-        $this->session->forget(self::SESSION_METHOD);
-        $this->session->forget(self::SESSION_PENDING);
+        $this->checkoutSession->forgetMethod();
+        $this->checkoutSession->forgetPending();
         $this->session->flash('success', 'Choisissez à nouveau la livraison et le moyen de paiement.');
         return $this->redirect('/checkout/shipping');
     }
 
-    private function tryReopenPendingCardOrder(): bool
+    private function tryReopenPendingOnlineOrder(): bool
     {
-        $pendingId = (int) $this->session->get(self::SESSION_PENDING, 0);
+        $pendingId = $this->checkoutSession->pendingOrderId();
         if ($pendingId < 1) {
             return false;
         }
 
         $order = $this->findOwnedOrder($pendingId);
-        $this->session->forget(self::SESSION_PENDING);
+        $this->checkoutSession->forgetPending();
 
         if (
             $order === null
@@ -465,21 +427,20 @@ final class CheckoutController extends AbstractController
             return false;
         }
 
-        $this->session->set(self::SESSION_SHIPPING, $result['shipping']);
+        $this->checkoutSession->setShipping($result['shipping']);
         if (isset($result['billing']) && is_array($result['billing'])) {
-            $this->session->set(self::SESSION_BILLING, array_merge($result['billing'], [
-                'billing_same_as_shipping' => $this->addressesEqual($result['shipping'], $result['billing']) ? '1' : '0',
+            $this->checkoutSession->setBilling(array_merge($result['billing'], [
+                'billing_same_as_shipping' => $this->addresses->addressesEqual($result['shipping'], $result['billing']) ? '1' : '0',
             ]));
         }
-        // Mode livraison conservé si encore en session ; sinon l’étape shipping le redemandera.
 
         return true;
     }
 
-    private function cancelPendingCardOrderOnly(): void
+    private function cancelPendingOnlineOrderOnly(): void
     {
-        $pendingId = (int) $this->session->get(self::SESSION_PENDING, 0);
-        $this->session->forget(self::SESSION_PENDING);
+        $pendingId = $this->checkoutSession->pendingOrderId();
+        $this->checkoutSession->forgetPending();
         if ($pendingId < 1) {
             return;
         }
@@ -504,255 +465,6 @@ final class CheckoutController extends AbstractController
         }
 
         return $this->orderDao->findForUser($orderId, (int) $this->auth->id());
-    }
-
-    /** @return list<string> */
-    private function enabledMethods(): array
-    {
-        $configured = $this->shop['payment']['methods'] ?? ['card', 'transfer', 'check'];
-        if (!is_array($configured)) {
-            return [Order::PAYMENT_CARD];
-        }
-
-        $allowed = [
-            Order::PAYMENT_CARD,
-            Order::PAYMENT_PAYPAL,
-            Order::PAYMENT_TRANSFER,
-            Order::PAYMENT_CHECK,
-        ];
-        $out = [];
-        foreach ($configured as $m) {
-            $m = (string) $m;
-            if (!in_array($m, $allowed, true)) {
-                continue;
-            }
-            if ($m === Order::PAYMENT_PAYPAL && !$this->paypal->isConfigured()) {
-                continue;
-            }
-            $out[] = $m;
-        }
-
-        return $out !== [] ? $out : [Order::PAYMENT_CARD];
-    }
-
-    /**
-     * @return array{
-     *   shipping_name?: string,
-     *   shipping_line1?: string,
-     *   shipping_postal?: string,
-     *   shipping_city?: string,
-     *   shipping_country?: string
-     * }
-     */
-    private function sessionShipping(): array
-    {
-        $data = $this->session->get(self::SESSION_SHIPPING, []);
-        return is_array($data) ? $data : [];
-    }
-
-    /**
-     * @param array{
-     *   shipping_name?: string,
-     *   shipping_line1?: string,
-     *   shipping_postal?: string,
-     *   shipping_city?: string,
-     *   shipping_country?: string
-     * } $address
-     */
-    private function shippingContext(array $address): ShippingContext
-    {
-        $weightGrams = 0;
-        foreach ($this->cart->lines() as $line) {
-            $product = $line['product'] ?? null;
-            if ($product === null) {
-                continue;
-            }
-            $weightGrams += max(0, (int) $product->weight_g) * max(1, (int) $line['qty']);
-        }
-
-        return new ShippingContext(
-            subtotalCents: $this->cart->totalCents(),
-            weightGrams: $weightGrams,
-            destination: new Address(
-                country: (string) ($address['shipping_country'] ?? 'FR'),
-                postalCode: (string) ($address['shipping_postal'] ?? ''),
-                city: (string) ($address['shipping_city'] ?? ''),
-                line1: (string) ($address['shipping_line1'] ?? ''),
-            ),
-        );
-    }
-
-    /** @return array{id?: string, label?: string} */
-    private function sessionPickup(): array
-    {
-        $data = $this->session->get(self::SESSION_PICKUP, []);
-
-        return is_array($data) ? $data : [];
-    }
-
-    private function resolveSelection(): ?ShippingSelection
-    {
-        $address = $this->sessionShipping();
-        $code = trim((string) $this->session->get(self::SESSION_METHOD, ''));
-        if ($address === [] || $code === '') {
-            return null;
-        }
-
-        $pickup = $this->sessionPickup();
-        $pickupId = trim((string) ($pickup['id'] ?? ''));
-        $pickupLabel = trim((string) ($pickup['label'] ?? ''));
-
-        try {
-            return $this->shippingService->select(
-                $this->shippingContext($address),
-                $code,
-                $pickupId !== '' ? $pickupId : null,
-                $pickupLabel !== '' ? $pickupLabel : null,
-            );
-        } catch (InvalidSelectionException) {
-            $this->session->forget(self::SESSION_METHOD);
-            $this->session->forget(self::SESSION_PICKUP);
-            return null;
-        }
-    }
-
-    private function clearCheckoutSession(): void
-    {
-        $this->session->forget(self::SESSION_SHIPPING);
-        $this->session->forget(self::SESSION_BILLING);
-        $this->session->forget(self::SESSION_METHOD);
-        $this->session->forget(self::SESSION_PICKUP);
-        $this->session->forget(self::SESSION_PENDING);
-        $this->session->forget('checkout.payment_method');
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function defaultAddressOld(): array
-    {
-        $user = $this->userDao->findById((int) $this->auth->id());
-        /** @var User|null $user */
-        if ($user === null) {
-            return [
-                'shipping_name' => $this->auth->name(),
-                'shipping_line1' => '',
-                'shipping_postal' => '',
-                'shipping_city' => '',
-                'shipping_country' => 'FR',
-                'billing_same_as_shipping' => '1',
-                'billing_name' => '',
-                'billing_line1' => '',
-                'billing_postal' => '',
-                'billing_city' => '',
-                'billing_country' => 'FR',
-            ];
-        }
-
-        $shipping = $user->shippingAddressArray();
-        $billing = $user->billingAddressArray();
-
-        return array_merge($shipping, $billing, [
-            'billing_same_as_shipping' => $user->billingSameAsShipping() ? '1' : '0',
-        ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function sessionBilling(): array
-    {
-        $data = $this->session->get(self::SESSION_BILLING, []);
-        return is_array($data) ? $data : [];
-    }
-
-    /**
-     * @param array{
-     *   shipping_name: string,
-     *   shipping_line1: string,
-     *   shipping_postal: string,
-     *   shipping_city: string,
-     *   shipping_country: string
-     * } $shipping
-     * @return array{
-     *   billing_name: string,
-     *   billing_line1: string,
-     *   billing_postal: string,
-     *   billing_city: string,
-     *   billing_country: string
-     * }
-     */
-    private function sessionBillingForOrder(array $shipping): array
-    {
-        $billing = $this->sessionBilling();
-        $same = ((string) ($billing['billing_same_as_shipping'] ?? '1')) === '1';
-
-        if ($same || trim((string) ($billing['billing_line1'] ?? '')) === '') {
-            return [
-                'billing_name' => $shipping['shipping_name'],
-                'billing_line1' => $shipping['shipping_line1'],
-                'billing_postal' => $shipping['shipping_postal'],
-                'billing_city' => $shipping['shipping_city'],
-                'billing_country' => $shipping['shipping_country'],
-            ];
-        }
-
-        return [
-            'billing_name' => (string) ($billing['billing_name'] ?? ''),
-            'billing_line1' => (string) ($billing['billing_line1'] ?? ''),
-            'billing_postal' => (string) ($billing['billing_postal'] ?? ''),
-            'billing_city' => (string) ($billing['billing_city'] ?? ''),
-            'billing_country' => (string) ($billing['billing_country'] ?? 'FR'),
-        ];
-    }
-
-    /**
-     * @param array<string, string> $data
-     * @return array<string, list<string>>
-     */
-    private function validateAddressBlock(array $data, string $prefix): array
-    {
-        $nameKey = $prefix . '_name';
-        $lineKey = $prefix . '_line1';
-        $postalKey = $prefix . '_postal';
-        $cityKey = $prefix . '_city';
-        $countryKey = $prefix . '_country';
-
-        $v = $this->validate([
-            $nameKey => $data[$nameKey] ?? '',
-            $lineKey => $data[$lineKey] ?? '',
-            $postalKey => $data[$postalKey] ?? '',
-            $cityKey => $data[$cityKey] ?? '',
-            $countryKey => $data[$countryKey] ?? '',
-        ], [
-            $nameKey => 'required|min:2|max:150',
-            $lineKey => 'required|min:3|max:255',
-            $postalKey => 'required',
-            $cityKey => 'required|min:2|max:100',
-            $countryKey => 'required|min:2|max:2',
-        ]);
-
-        $errors = $v->errors();
-        $postal = (string) ($data[$postalKey] ?? '');
-        $postalLen = mb_strlen($postal);
-        if ($postal !== '' && ($postalLen < 3 || $postalLen > 20)) {
-            $errors[$postalKey] = ['Le code postal doit contenir entre 3 et 20 caractères.'];
-        }
-
-        return $errors;
-    }
-
-    /**
-     * @param array<string, string> $shipping
-     * @param array<string, string> $billing
-     */
-    private function addressesEqual(array $shipping, array $billing): bool
-    {
-        return ($shipping['shipping_name'] ?? '') === ($billing['billing_name'] ?? '')
-            && ($shipping['shipping_line1'] ?? '') === ($billing['billing_line1'] ?? '')
-            && ($shipping['shipping_postal'] ?? '') === ($billing['billing_postal'] ?? '')
-            && ($shipping['shipping_city'] ?? '') === ($billing['billing_city'] ?? '')
-            && ($shipping['shipping_country'] ?? '') === ($billing['billing_country'] ?? '');
     }
 
     private function isCheckedFlag(string $key, bool $default): bool

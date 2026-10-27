@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f23e12e8e7f39d894ecf57fedf5ba8ae",
+    "content-hash": "863d2ffce99989994b241927c5e38fee",
     "packages": [
         {
             "name": "astral-php/astral-core",
@@ -286,6 +286,72 @@
                 "source": "https://github.com/astral-php/astral-template/tree/0.1.0"
             },
             "time": "2026-08-30T06:55:48+00:00"
+        },
+        {
+            "name": "astral-php/astral-worker",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-worker.git",
+                "reference": "99e2b743662421ab14887be068204ddc4ff343db"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/astral-php/astral-worker/zipball/99e2b743662421ab14887be068204ddc4ff343db",
+                "reference": "99e2b743662421ab14887be068204ddc4ff343db",
+                "shasum": ""
+            },
+            "require": {
+                "astral-php/astral-core": "^1.2",
+                "ext-json": "*",
+                "ext-pdo": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5 || ^11.0"
+            },
+            "suggest": {
+                "dompdf/dompdf": "Exemple de moteur PDF pour GeneratePdfJob (voir examples/)",
+                "ext-pcntl": "Arrêt propre du worker sur SIGTERM/SIGINT (Linux/macOS)",
+                "ext-redis": "Requis uniquement pour QUEUE_DRIVER=redis"
+            },
+            "type": "library",
+            "extra": {
+                "astral-worker": {
+                    "stubs": "stubs",
+                    "migrations": "database/migrations"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Astral\\Worker\\": "src/Astral/Worker/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "astral-php",
+                    "homepage": "https://github.com/astral-php"
+                }
+            ],
+            "description": "File d'attente et worker pour Astral — mails et PDF en arrière-plan (sync, database, Redis)",
+            "homepage": "https://github.com/astral-php/astral-worker",
+            "keywords": [
+                "astral",
+                "jobs",
+                "mvc",
+                "php",
+                "queue",
+                "worker"
+            ],
+            "support": {
+                "issues": "https://github.com/astral-php/astral-worker/issues",
+                "source": "https://github.com/astral-php/astral-worker"
+            },
+            "time": "2026-10-25T08:45:58+00:00"
         },
         {
             "name": "dompdf/dompdf",

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Dao\ProductDao;
+use App\Cache\CatalogReadCache;
 use App\Dao\UserDao;
 use Controller\AbstractController;
 use Core\Http\Response;
@@ -19,7 +19,7 @@ final class HomeController extends AbstractController
     public function __construct(
         View $view,
         private UserDao $userDao,
-        private ProductDao $productDao,
+        private CatalogReadCache $catalogCache,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -27,7 +27,7 @@ final class HomeController extends AbstractController
 
     public function index(): Response
     {
-        $featured = $this->productDao->findActive(null, 6);
+        $featured = $this->catalogCache->featured(6);
 
         return $this->render('home/index', [
             'title'    => (string) ($this->shop['store_name'] ?? 'Astral Shop'),

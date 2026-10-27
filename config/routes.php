@@ -18,9 +18,9 @@ use App\Controllers\PaymentCheckoutController;
 use App\Controllers\PaypalCheckoutController;
 use App\Controllers\PaypalWebhookController;
 use App\Controllers\ProfileController;
+use App\Controllers\StripeWebhookController;
 use App\Controllers\UserController;
 use App\Middleware\RequireInstalledMiddleware;
-use AstralPayment\Controllers\WebhookController;
 use AstralPayment\Middleware\StripeWebhookMiddleware;
 use Core\Auth\Middleware\AdminMiddleware;
 use Core\Auth\Middleware\AuthMiddleware;
@@ -35,7 +35,7 @@ return function (Router $router): void {
     $router->post('/install', InstallController::class, 'store')->middleware([GuestMiddleware::class, CsrfMiddleware::class]);
 
     // Webhook Stripe — signature HMAC, hors install gate
-    $router->post('/webhooks/stripe', WebhookController::class, 'handle')
+    $router->post('/webhooks/stripe', StripeWebhookController::class, 'handle')
         ->middleware(StripeWebhookMiddleware::class);
 
     // Webhook PayPal — verify-webhook-signature, hors CSRF

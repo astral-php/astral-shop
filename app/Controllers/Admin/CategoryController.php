@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Cache\CatalogReadCache;
 use App\Dao\CategoryDao;
 use App\Support\Slug;
 use Core\Exception\NotFoundException;
@@ -19,6 +20,7 @@ final class CategoryController extends AdminController
         private Request $request,
         private CategoryDao $categoryDao,
         private Session $session,
+        private CatalogReadCache $catalogCache,
     ) {
         parent::__construct($view);
     }
@@ -69,6 +71,7 @@ final class CategoryController extends AdminController
             'active'      => $data['active'],
         ]);
 
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Catégorie créée.');
         return $this->redirect('/admin/categories');
     }
@@ -122,6 +125,7 @@ final class CategoryController extends AdminController
             'active'      => $data['active'],
         ]);
 
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Catégorie mise à jour.');
         return $this->redirect('/admin/categories');
     }
@@ -134,6 +138,7 @@ final class CategoryController extends AdminController
         }
 
         $this->categoryDao->delete((int) $id);
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Catégorie supprimée.');
         return $this->redirect('/admin/categories');
     }

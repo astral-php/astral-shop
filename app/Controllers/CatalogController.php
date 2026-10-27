@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Cache\CatalogReadCache;
 use App\Dao\CategoryDao;
 use App\Dao\ProductDao;
 use Controller\AbstractController;
@@ -18,6 +19,7 @@ final class CatalogController extends AbstractController
         View $view,
         private CategoryDao $categoryDao,
         private ProductDao $productDao,
+        private CatalogReadCache $catalogCache,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -25,8 +27,8 @@ final class CatalogController extends AbstractController
 
     public function index(): Response
     {
-        $categories = $this->categoryDao->findActiveOrdered();
-        $products   = $this->productDao->findActive();
+        $categories = $this->catalogCache->activeCategories();
+        $products   = $this->catalogCache->activeProducts();
 
         return $this->render('shop/index', [
             'title'      => (string) ($this->shop['store_name'] ?? 'Boutique'),
@@ -45,8 +47,8 @@ final class CatalogController extends AbstractController
             throw new NotFoundException('Catégorie introuvable.');
         }
 
-        $categories = $this->categoryDao->findActiveOrdered();
-        $products   = $this->productDao->findActive($category->id);
+        $categories = $this->catalogCache->activeCategories();
+        $products   = $this->catalogCache->activeProducts($category->id);
 
         return $this->render('shop/index', [
             'title'      => $category->name,
@@ -59,6 +61,7 @@ final class CatalogController extends AbstractController
 
     public function show(string $slug): Response
     {
+        // Fiche produit : pas de cache (stock / dispo à jour)
         $product = $this->productDao->findBySlug($slug);
 
         if ($product === null || !$product->isActive()) {

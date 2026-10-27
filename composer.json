@@ -1,6 +1,6 @@
 {
   "name": "astral-php/astral-shop",
-  "description": "Astral Shop — boutique e-commerce démo (en développement)",
+  "description": "Astral Shop — boutique e-commerce (Stripe, PayPal, shipping, worker)",
   "type": "project",
   "license": "MIT",
   "keywords": [
@@ -24,6 +24,7 @@
     "astral-php/astral-paypal": "^0.1",
     "astral-php/astral-shipping": "^0.5.3",
     "astral-php/astral-template": "^0.1",
+    "astral-php/astral-worker": "^0.1",
     "dompdf/dompdf": "^3.0"
   },
   "require-dev": {

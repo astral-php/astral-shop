@@ -6,17 +6,20 @@ declare(strict_types=1);
 define('BASE_PATH', dirname(__DIR__));
 
 require BASE_PATH . '/vendor/autoload.php';
+require BASE_PATH . '/bootstrap/container.php';
 
 if (file_exists(BASE_PATH . '/.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(BASE_PATH);
     $dotenv->safeLoad();
 }
 
+use App\Console\Commands\CheckProductionCommand;
 use App\Console\Commands\ExpireOfflineOrdersCommand;
 use App\Dao\OrderDao;
 use App\Dao\OrderItemDao;
 use App\Dao\ProductDao;
 use App\Services\OrderStockService;
+use Astral\Worker\Console\CommandFactory as WorkerCommandFactory;
 use AstralShipping\Console\ImportRatesCommand;
 use AstralShipping\Dao\ShippingRateDao;
 use Core\Console\Console;
@@ -36,6 +39,7 @@ use Database\Migration\Migrator;
 $console = new Console(appName: 'Astral Starter Console');
 
 $console->register(new ClearCacheCommand(BASE_PATH . '/storage/cache'));
+$console->register(new CheckProductionCommand());
 
 $makeMigration = new MakeMigrationCommand(BASE_PATH . '/database/migrations');
 $console->register(new MakeModelCommand(BASE_PATH . '/app/Models'));
@@ -62,6 +66,15 @@ try {
     $console->register(new ImportRatesCommand(new ShippingRateDao($pdo), $pdo));
 } catch (\Throwable $e) {
     fwrite(STDERR, "\033[33m⚠ Commandes de migration indisponibles : " . $e->getMessage() . "\033[0m\n");
+}
+
+try {
+    $container = astral_shop_container();
+    foreach (WorkerCommandFactory::all(static fn (string $id): object => $container->make($id)) as $command) {
+        $console->register($command);
+    }
+} catch (\Throwable $e) {
+    fwrite(STDERR, "\033[33m⚠ Commandes worker indisponibles : " . $e->getMessage() . "\033[0m\n");
 }
 
 exit($console->run($_SERVER['argv'] ?? []));

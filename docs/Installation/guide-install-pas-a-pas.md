@@ -31,6 +31,19 @@ ou `composer run serve`.
 **Livraison 1.1 :** barèmes Colissimo / Mondial Relay via CSV (exemple fictif ci-dessus).  
 Produits : renseigner le **poids (g)** en admin. Widgets relais officiels → doc `astral-shipping` `widgets-pickup.md` (UI saisie démo dans le checkout).
 
+### Worker (file d’attente — e-mails / factures PDF)
+
+Après migrate, les tables `jobs` / `failed_jobs` existent. Dans `.env` :
+
+| `QUEUE_DRIVER` | Usage |
+|----------------|--------|
+| `database` | **Défaut shop** — traiter la file : `php bin/console worker:work --stop-when-empty` (cron / terminal) |
+| `sync` | Dév / CI — jobs exécutés tout de suite dans la requête (pas de worker) |
+| `redis` | Opt-in — activer **extension Redis** Laragon + service Redis ; ne pas activer avant besoin (charge / Phase cache) |
+
+Cron Laragon / Planificateur (ex.) : chaque minute  
+`php bin/console worker:work --stop-when-empty`
+
 ---
 
 ## 2. Premier admin
@@ -54,6 +67,17 @@ Auth boutique : **`AUTH_REGISTRATION=confirm`** (ne pas basculer `direct` → `c
 | `STRIPE_*` | Clés + webhook secret |
 | `MAIL_*` | SMTP / Mailpit |
 | `DB_*` | Base de données |
+| `QUEUE_DRIVER` | File worker (`database` / `sync` / `redis`) |
+| `CACHE_DRIVER` | Cache catalogue (`file` défaut / `redis` opt-in) |
+| `CACHE_CATALOG_TTL` | TTL listes home/catalogue (secondes, défaut 300) |
+| `REDIS_*` | Host/port si cache ou queue Redis (Laragon :6379) |
+
+### Cache lecture (catalogue / home)
+
+- **Caché :** listes catégories + produits actifs, featured home.  
+- **Non caché :** fiche produit (stock), panier, checkout, commandes.  
+- Invalidation auto à la création / édition / suppression admin produit ou catégorie.  
+- `CACHE_DRIVER=redis` : service Redis + **extension PHP redis** (Laragon → PHP → Extensions → `redis`). Sans ext, fallback **file** (log warning).
 
 ### Identité boutique & légal — `.env` en 1.0.0
 
@@ -122,8 +146,20 @@ Checklist QA interne (hub infos) : `astral-informations/astral-shop/Roadmap/test
 
 ---
 
-## 8. Ne pas faire en 1.0.0
+## 8. Production (1.5+)
 
-- Attendre Colissimo / Mondial Relay / Sendcloud → **1.1.0**  
-- Worker / cache Redis / OPcache avancé → **1.5.0** (hub : `Features/Optimisation`)  
+Avant ouverture publique : **[production-checklist.md](./production-checklist.md)**
+
+```bash
+php bin/console shop:check-production
+```
+
+Points clés : `APP_ENV=production`, `APP_DEBUG=false`, OPcache, cron worker + `orders:expire-offline`, remplacer IBAN / SIRET / mail démo, webhooks HTTPS.
+
+---
+
+## 9. Historique versions
+
+- Colissimo / Mondial Relay → **1.1.0**  
+- Worker / cache Redis / OPcache / cron → **1.5.0** (hub : `Features/Optimisation`)  
 

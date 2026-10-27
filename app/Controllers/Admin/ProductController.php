@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Cache\CatalogReadCache;
 use App\Dao\CategoryDao;
 use App\Dao\ProductDao;
 use App\Support\Money;
@@ -25,6 +26,7 @@ final class ProductController extends AdminController
         private CategoryDao $categoryDao,
         private Session $session,
         private ProductImageUploader $uploader,
+        private CatalogReadCache $catalogCache,
         private array $shop = [],
     ) {
         parent::__construct($view);
@@ -102,6 +104,7 @@ final class ProductController extends AdminController
             'active'      => $data['active'],
         ]);
 
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Produit créé (prix TTC enregistré).');
         return $this->redirect('/admin/products');
     }
@@ -182,6 +185,7 @@ final class ProductController extends AdminController
             'active'      => $data['active'],
         ]);
 
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Produit mis à jour.');
         return $this->redirect('/admin/products');
     }
@@ -194,6 +198,7 @@ final class ProductController extends AdminController
         }
 
         $this->productDao->delete((int) $id);
+        $this->catalogCache->invalidate();
         $this->session->flash('success', 'Produit supprimé.');
         return $this->redirect('/admin/products');
     }

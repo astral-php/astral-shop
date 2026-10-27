@@ -20,6 +20,7 @@ use App\Controllers\PaymentCheckoutController;
 use App\Controllers\PaypalCheckoutController;
 use App\Controllers\PaypalWebhookController;
 use App\Controllers\ProfileController;
+use App\Controllers\StripeWebhookController;
 use App\Controllers\UserController;
 use App\Support\ProductImageUploader;
 use App\Dao\CategoryDao;
@@ -29,6 +30,10 @@ use App\Dao\ProductDao;
 use App\Dao\UserDao;
 use App\Services\CancelledOrderPurgeService;
 use App\Services\CartService;
+use App\Services\Checkout\CheckoutAddressService;
+use App\Services\Checkout\CheckoutPaymentOptions;
+use App\Services\Checkout\CheckoutSessionStore;
+use App\Services\Checkout\CheckoutShippingResolver;
 use App\Services\CheckoutService;
 use App\Services\OrderStockService;
 use App\Services\PaypalPaymentSyncService;
@@ -41,6 +46,11 @@ use App\Events\RefundRequested;
 use App\Events\RoleChanged;
 use App\Events\UserLoggedIn;
 use App\Events\UserRegistered;
+use App\Cache\CacheStoreFactory;
+use App\Cache\CacheStoreInterface;
+use App\Cache\CatalogReadCache;
+use App\Jobs\GenerateInvoiceJob;
+use App\Jobs\SendOrderConfirmationJob;
 use App\Listeners\DecrementStockOnPaymentSucceeded;
 use App\Listeners\GenerateInvoiceOnPayment;
 use App\Listeners\LogRoleChange;
@@ -55,6 +65,8 @@ use App\Listeners\SendRefundRequestRejectedEmail;
 use App\Listeners\SendWelcomeEmail;
 use App\Services\InvoiceService;
 use App\Services\OrderFulfillmentService;
+use Astral\Worker\Queue\QueueInterface;
+use AstralPayment\Dao\PaymentDao;
 use AstralPayment\Events\PaymentRefunded;
 use AstralPayment\Events\PaymentSucceeded;
 use AstralPayment\PaymentService;
@@ -62,6 +74,7 @@ use AstralPaypal\PaypalService;
 use AstralShipping\Dao\OrderShipmentDao;
 use AstralShipping\Service\ShippingService;
 use Core\Auth\Auth;
+use Core\Cache;
 use Core\Container;
 use Core\Events\EventDispatcher;
 use Core\Logger;
@@ -131,12 +144,20 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(GenerateInvoiceOnPayment::class, fn (Container $c) => new GenerateInvoiceOnPayment(
+            queue: $c->make(QueueInterface::class),
+        ));
+
+        $container->bind(SendOrderConfirmationEmail::class, fn (Container $c) => new SendOrderConfirmationEmail(
+            queue: $c->make(QueueInterface::class),
+        ));
+
+        $container->bind(GenerateInvoiceJob::class, fn (Container $c) => new GenerateInvoiceJob(
             orderDao: $c->make(OrderDao::class),
             invoices: $c->make(InvoiceService::class),
             logger:   $c->make(Logger::class),
         ));
 
-        $container->bind(SendOrderConfirmationEmail::class, fn (Container $c) => new SendOrderConfirmationEmail(
+        $container->bind(SendOrderConfirmationJob::class, fn (Container $c) => new SendOrderConfirmationJob(
             mailer:       $c->make(Mailer::class),
             orderDao:     $c->make(OrderDao::class),
             orderItemDao: $c->make(OrderItemDao::class),
@@ -243,6 +264,35 @@ final class AppServiceProvider implements ServiceProviderInterface
             offlinePaymentDays:  $offlineDays,
         ));
 
+        $container->singleton(CheckoutSessionStore::class, fn (Container $c) => new CheckoutSessionStore(
+            $c->make(Session::class),
+        ));
+        $container->singleton(CheckoutAddressService::class, fn (Container $c) => new CheckoutAddressService(
+            $c->make(UserDao::class),
+        ));
+        $container->singleton(CheckoutShippingResolver::class, fn (Container $c) => new CheckoutShippingResolver(
+            cart:            $c->make(CartService::class),
+            shippingService: $c->make(ShippingService::class),
+            sessionStore:    $c->make(CheckoutSessionStore::class),
+        ));
+        $container->singleton(CheckoutPaymentOptions::class, fn (Container $c) => new CheckoutPaymentOptions(
+            shop:   $shopConfig,
+            paypal: $c->make(PaypalService::class),
+        ));
+
+        $container->singleton(CacheStoreInterface::class, fn (Container $c) => CacheStoreFactory::make(
+            $c->make(Cache::class),
+            $c->make(Logger::class),
+        ));
+
+        $catalogTtl = max(30, (int) ($_ENV['CACHE_CATALOG_TTL'] ?? 300));
+        $container->singleton(CatalogReadCache::class, fn (Container $c) => new CatalogReadCache(
+            store:       $c->make(CacheStoreInterface::class),
+            productDao:  $c->make(ProductDao::class),
+            categoryDao: $c->make(CategoryDao::class),
+            ttl:         $catalogTtl,
+        ));
+
         $container->singleton(Mailer::class, function () use ($appConfig): Mailer {
             /** @var array<string, mixed> $mail */
             $mail = $appConfig['mail'] ?? [];
@@ -274,10 +324,10 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(HomeController::class, fn (Container $c) => new HomeController(
-            view:       $c->make(View::class),
-            userDao:    $c->make(UserDao::class),
-            productDao: $c->make(ProductDao::class),
-            shop:       $shopConfig,
+            view:         $c->make(View::class),
+            userDao:      $c->make(UserDao::class),
+            catalogCache: $c->make(CatalogReadCache::class),
+            shop:         $shopConfig,
         ));
 
         $container->bind(LegalController::class, fn (Container $c) => new LegalController(
@@ -286,10 +336,11 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(CatalogController::class, fn (Container $c) => new CatalogController(
-            view:        $c->make(View::class),
-            categoryDao: $c->make(CategoryDao::class),
-            productDao:  $c->make(ProductDao::class),
-            shop:        $shopConfig,
+            view:         $c->make(View::class),
+            categoryDao:  $c->make(CategoryDao::class),
+            productDao:   $c->make(ProductDao::class),
+            catalogCache: $c->make(CatalogReadCache::class),
+            shop:         $shopConfig,
         ));
 
         $container->bind(CartController::class, fn (Container $c) => new CartController(
@@ -307,10 +358,12 @@ final class AppServiceProvider implements ServiceProviderInterface
             auth:            $c->make(Auth::class),
             cart:            $c->make(CartService::class),
             checkout:        $c->make(CheckoutService::class),
-            shippingService: $c->make(ShippingService::class),
+            checkoutSession: $c->make(CheckoutSessionStore::class),
+            addresses:       $c->make(CheckoutAddressService::class),
+            shipping:        $c->make(CheckoutShippingResolver::class),
+            paymentOptions:  $c->make(CheckoutPaymentOptions::class),
             orderDao:        $c->make(OrderDao::class),
             userDao:         $c->make(UserDao::class),
-            paypal:          $c->make(PaypalService::class),
             shop:            $shopConfig,
         ));
 
@@ -375,6 +428,14 @@ final class AppServiceProvider implements ServiceProviderInterface
             logger:     $c->make(Logger::class),
         ));
 
+        $container->bind(StripeWebhookController::class, fn (Container $c) => new StripeWebhookController(
+            paymentService: $c->make(PaymentService::class),
+            orderDao:       $c->make(OrderDao::class),
+            paymentDao:     $c->make(PaymentDao::class),
+            dispatcher:     $c->make(EventDispatcher::class),
+            logger:         $c->make(Logger::class),
+        ));
+
         $container->bind(UserController::class, fn (Container $c) => new UserController(
             view:    $c->make(View::class),
             request: $c->make(Request::class),
@@ -404,20 +465,22 @@ final class AppServiceProvider implements ServiceProviderInterface
         ));
 
         $container->bind(AdminCategoryController::class, fn (Container $c) => new AdminCategoryController(
-            view:        $c->make(View::class),
-            request:     $c->make(Request::class),
-            categoryDao: $c->make(CategoryDao::class),
-            session:     $c->make(Session::class),
+            view:         $c->make(View::class),
+            request:      $c->make(Request::class),
+            categoryDao:  $c->make(CategoryDao::class),
+            session:      $c->make(Session::class),
+            catalogCache: $c->make(CatalogReadCache::class),
         ));
 
         $container->bind(AdminProductController::class, fn (Container $c) => new AdminProductController(
-            view:        $c->make(View::class),
-            request:     $c->make(Request::class),
-            productDao:  $c->make(ProductDao::class),
-            categoryDao: $c->make(CategoryDao::class),
-            session:     $c->make(Session::class),
-            uploader:    $c->make(ProductImageUploader::class),
-            shop:        $shopConfig,
+            view:         $c->make(View::class),
+            request:      $c->make(Request::class),
+            productDao:   $c->make(ProductDao::class),
+            categoryDao:  $c->make(CategoryDao::class),
+            session:      $c->make(Session::class),
+            uploader:     $c->make(ProductImageUploader::class),
+            catalogCache: $c->make(CatalogReadCache::class),
+            shop:         $shopConfig,
         ));
 
         $container->bind(AdminOrderController::class, fn (Container $c) => new AdminOrderController(

@@ -87,4 +87,47 @@ final class ProductDao extends AbstractDao
 
         return $rows !== [];
     }
+
+    /**
+     * Décrémente atomiquement si stock suffisant.
+     *
+     * @return bool true si une ligne a été mise à jour
+     */
+    public function tryDecrementStock(int $productId, int $quantity): bool
+    {
+        if ($productId < 1 || $quantity < 1) {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE {$this->getTable()}
+             SET stock = stock - :qty
+             WHERE id = :id AND stock >= :qty2",
+        );
+        $stmt->execute([
+            ':qty'  => $quantity,
+            ':id'   => $productId,
+            ':qty2' => $quantity,
+        ]);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    /** Réincrémente le stock (restock). */
+    public function incrementStock(int $productId, int $quantity): void
+    {
+        if ($productId < 1 || $quantity < 1) {
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE {$this->getTable()}
+             SET stock = stock + :qty
+             WHERE id = :id",
+        );
+        $stmt->execute([
+            ':qty' => $quantity,
+            ':id'  => $productId,
+        ]);
+    }
 }

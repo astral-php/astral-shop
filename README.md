@@ -3,10 +3,10 @@
 Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php) — catalogue, panier, checkout, Stripe, frais de port, facture PDF, remboursements et retours colis.
 
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Version 1.1.1** — PayPal (Orders v2) + Colissimo / Mondial Relay (barèmes).  
+> **Version 1.5.0** — worker (mail/PDF), stock idempotent, cache catalogue, checklist prod.  
 
 > **Ouvrir une boutique** reste à la charge du marchand : identité, textes, paiements, port, exploitation.  
 > → Documentation : **[docs/README.md](./docs/README.md)** · guides dans [`docs/Installation/`](./docs/Installation/)
@@ -23,13 +23,16 @@ Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php
 | Paiement | Stripe + PayPal (webhook) + offline (IBAN / chèque) |
 | Port | `astral-shipping` ^0.5 : forfait + retrait + **Colissimo / MR** (barèmes) + franco |
 | Commandes | Statut paiement ≠ statut colis ; admin préparation / expédition |
-| Facture | PDF Dompdf au paiement, téléchargement espace client |
+| Facture | PDF Dompdf via file worker (`QUEUE_DRIVER`), espace client |
+| File | `astral-worker` — confirmation mail + PDF hors requête HTTP |
+| Cache | Catalogue / home (`CACHE_DRIVER=file|redis`) — checkout non caché |
 | Remboursements | Demande client, RIB offline, accept/refus, Stripe / marquage offline |
 | Retours | Délai, réception admin / dispense, refund verrouillé tant que non reçu |
 | Légal | Pages modèles CGV / mentions / retours / confidentialité + `SHOP_LEGAL_*` |
 | UI | Indigo Nova-like (`#4f46e5`), `astral-template` admin |
 
-**1.1.1 livré :** PayPal Orders v2. Sendcloud / API étiquettes → plus tard · worker / cache → **1.5.0**.
+**1.1.1 :** PayPal Orders v2. **1.5.0 :** worker + stock + cache + prod checklist.  
+Sendcloud / API étiquettes → plus tard.
 
 ## Moteur vs marchand (à être clair)
 
@@ -79,9 +82,11 @@ Widgets relais officiels : doc package `astral-shipping` → `docs/widgets-picku
 
 ```json
 "astral-php/astral-core": "^1.2",
-"astral-php/astral-payment": "^0.1.2",
+"astral-php/astral-payment": "^0.1.3",
+"astral-php/astral-paypal": "^0.1",
 "astral-php/astral-shipping": "^0.5.3",
-"astral-php/astral-template": "^0.1"
+"astral-php/astral-template": "^0.1",
+"astral-php/astral-worker": "^0.1"
 ```
 
 ## Configuration utile
@@ -97,9 +102,17 @@ SHOP_LEGAL_COMPANY="Votre Société SAS"
 SHOP_LEGAL_SIRET="123 456 789 00012"
 MAIL_HOST=127.0.0.1
 MAIL_PORT=1025
+QUEUE_DRIVER=database
+CACHE_DRIVER=file
 ```
 
-Voir `.env.example` pour Stripe, virement, chèque et l’ensemble `SHOP_LEGAL_*`.
+Voir `.env.example` pour Stripe, PayPal, virement, chèque, Redis et l’ensemble `SHOP_LEGAL_*`.
+
+Après paiement (`QUEUE_DRIVER=database`) :
+
+```bash
+php bin/console worker:work --stop-when-empty
+```
 
 Chèque / virement : le stock est réservé à l’engagement jusqu’à `payment_due_at`.  
 Expiration + restock (cron / Task Scheduler, ex. 1×/heure) :
@@ -121,7 +134,9 @@ php bin/console orders:expire-offline
 
 - **1.0.0 → 1.0.2** — livré  
 - **1.1.0** — Colissimo / MR barèmes + `weight_g`  
-- **1.1.1** — PayPal · **1.5.0** — Optimisation (worker + cache)
+- **1.1.1** — PayPal  
+- **1.5.0** — Optimisation (worker + stock + cache + prod) — livré  
+- Suite écosystème : hub **1.2.8** (après astral-testing)
 
 ## Licence
 

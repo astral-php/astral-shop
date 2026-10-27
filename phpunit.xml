@@ -11,4 +11,8 @@
         </testsuite>
     </testsuites>
 
+    <php>
+        <env name="QUEUE_DRIVER" value="sync"/>
+    </php>
+
 </phpunit>

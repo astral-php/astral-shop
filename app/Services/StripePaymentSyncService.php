@@ -54,13 +54,11 @@ final class StripePaymentSyncService
             return $order;
         }
 
-        // Course possible avec le webhook
-        $fresh = $this->orderDao->findById($order->id);
-        if ($fresh !== null && $fresh->isPaid()) {
-            return $fresh;
+        // Course possible avec le webhook — claim SQL unique avant événements
+        if (!$this->orderDao->tryMarkPaid($order->id)) {
+            return $this->orderDao->findById($order->id) ?? $order;
         }
 
-        $this->orderDao->update($order->id, ['status' => 'paid']);
         $this->dispatcher->dispatch(new OrderBecamePaid($order->id));
 
         $this->logger->info('StripePaymentSync: commande confirmée via API (retour / poll)', [

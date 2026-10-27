@@ -71,20 +71,15 @@ final class PaypalPaymentSyncService
         ?string $captureId,
         int $amountCents,
     ): Order {
-        $fresh = $this->orderDao->findById($order->id);
-        if ($fresh !== null && $fresh->isPaid()) {
-            return $fresh;
-        }
-
-        $update = [
-            'status'          => 'paid',
-            'paypal_order_id' => $paypalOrderId,
-        ];
+        $extra = ['paypal_order_id' => $paypalOrderId];
         if ($captureId !== null && $captureId !== '') {
-            $update['paypal_capture_id'] = $captureId;
+            $extra['paypal_capture_id'] = $captureId;
         }
 
-        $this->orderDao->update($order->id, $update);
+        // Claim SQL unique (return URL vs webhook) — pas d’événements en double
+        if (!$this->orderDao->tryMarkPaid($order->id, $extra)) {
+            return $this->orderDao->findById($order->id) ?? $order;
+        }
 
         $this->dispatcher->dispatch(new OrderBecamePaid($order->id));
         $this->dispatcher->dispatch(new PaypalPaymentSucceeded(

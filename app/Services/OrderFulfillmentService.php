@@ -56,7 +56,10 @@ final class OrderFulfillmentService
             return ['ok' => false, 'error' => 'Commande en échec — non applicable.'];
         }
 
-        $this->orderDao->update($order->id, ['status' => 'paid']);
+        if (!$this->orderDao->tryMarkPaid($order->id)) {
+            return ['ok' => false, 'error' => 'Cette commande est déjà payée.'];
+        }
+
         $this->dispatcher->dispatch(new OrderBecamePaid($order->id));
 
         $fresh = $this->orderDao->findById($order->id);
