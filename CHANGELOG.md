@@ -5,6 +5,12 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
+## [2.0.2] — 2026-10-31
+
+### Corrigé
+
+- Dépendance **astral-core 2.1.2** — restaure `bin/console`.
+
 ## [2.0.1] — 2026-10-31
 
 ### Modifié

@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "31d5e8f1e22e066ac1c4fe372dc3d8d8",
+    "content-hash": "3079dc26e7d21c4bf87f23bec41d7b31",
     "packages": [
         {
             "name": "astral-php/astral-core",
-            "version": "2.1.0",
+            "version": "2.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-core.git",
-                "reference": "9f428722efb2c51ee018d769c54b5975317c377d"
+                "reference": "fb1c284666dcc372eb46872c7dc40e7e20d77f97"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-core/zipball/9f428722efb2c51ee018d769c54b5975317c377d",
-                "reference": "9f428722efb2c51ee018d769c54b5975317c377d",
+                "url": "https://api.github.com/repos/astral-php/astral-core/zipball/fb1c284666dcc372eb46872c7dc40e7e20d77f97",
+                "reference": "fb1c284666dcc372eb46872c7dc40e7e20d77f97",
                 "shasum": ""
             },
             "require": {
@@ -57,13 +57,18 @@
             ],
             "support": {
                 "issues": "https://github.com/astral-php/astral-core/issues",
-                "source": "https://github.com/astral-php/astral-core/tree/2.1.0"
+                "source": "https://github.com/astral-php/astral-core/tree/2.1.2"
             },
-            "time": "2026-10-30T15:53:26+00:00"
+            "time": "2026-10-31T09:00:45+00:00"
         },
         {
             "name": "astral-php/astral-payment",
             "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-payment.git",
+                "reference": "0.2.0"
+            },
             "dist": {
                 "type": "zip",
                 "url": "https://github.com/astral-php/astral-payment/archive/refs/tags/0.2.0.zip",
@@ -120,16 +125,16 @@
             "support": {
                 "source": "https://github.com/astral-php/astral-payment",
                 "issues": "https://github.com/astral-php/astral-payment/issues"
-            },
-            "source": {
-                "type": "git",
-                "url": "https://github.com/astral-php/astral-payment.git",
-                "reference": "0.2.0"
             }
         },
         {
             "name": "astral-php/astral-paypal",
             "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-paypal.git",
+                "reference": "0.2.0"
+            },
             "dist": {
                 "type": "zip",
                 "url": "https://github.com/astral-php/astral-paypal/archive/refs/tags/0.2.0.zip",
@@ -188,16 +193,16 @@
             "support": {
                 "source": "https://github.com/astral-php/astral-paypal",
                 "issues": "https://github.com/astral-php/astral-paypal/issues"
-            },
-            "source": {
-                "type": "git",
-                "url": "https://github.com/astral-php/astral-paypal.git",
-                "reference": "0.2.0"
             }
         },
         {
             "name": "astral-php/astral-shipping",
             "version": "0.6.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-shipping.git",
+                "reference": "0.6.0"
+            },
             "dist": {
                 "type": "zip",
                 "url": "https://github.com/astral-php/astral-shipping/archive/refs/tags/0.6.0.zip",
@@ -259,16 +264,16 @@
             "support": {
                 "source": "https://github.com/astral-php/astral-shipping",
                 "issues": "https://github.com/astral-php/astral-shipping/issues"
-            },
-            "source": {
-                "type": "git",
-                "url": "https://github.com/astral-php/astral-shipping.git",
-                "reference": "0.6.0"
             }
         },
         {
             "name": "astral-php/astral-template",
             "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-template.git",
+                "reference": "0.2.0"
+            },
             "dist": {
                 "type": "zip",
                 "url": "https://github.com/astral-php/astral-template/archive/refs/tags/0.2.0.zip",
@@ -308,16 +313,16 @@
                 "tailwind",
                 "template",
                 "ui"
-            ],
-            "source": {
-                "type": "git",
-                "url": "https://github.com/astral-php/astral-template.git",
-                "reference": "0.2.0"
-            }
+            ]
         },
         {
             "name": "astral-php/astral-worker",
             "version": "0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/astral-php/astral-worker.git",
+                "reference": "0.2.0"
+            },
             "dist": {
                 "type": "zip",
                 "url": "https://github.com/astral-php/astral-worker/archive/refs/tags/0.2.0.zip",
@@ -382,11 +387,6 @@
             "support": {
                 "source": "https://github.com/astral-php/astral-worker",
                 "issues": "https://github.com/astral-php/astral-worker/issues"
-            },
-            "source": {
-                "type": "git",
-                "url": "https://github.com/astral-php/astral-worker.git",
-                "reference": "0.2.0"
             }
         },
         {
@@ -2960,12 +2960,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.9.0"
 }
