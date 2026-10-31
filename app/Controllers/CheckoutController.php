@@ -459,7 +459,7 @@ final class CheckoutController extends AbstractController
             return null;
         }
 
-        if ($this->auth->is(Role::ADMIN)) {
+        if ($this->auth->is(Role::Admin)) {
             /** @var Order|null */
             return $this->orderDao->findById($orderId);
         }

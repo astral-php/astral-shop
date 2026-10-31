@@ -9,7 +9,7 @@
         <?php endif ?>
     </div>
 
-    <?php if ($auth->is(\Core\Auth\Role::ADMIN)): ?>
+    <?php if ($auth->is(\Core\Auth\Role::Admin)): ?>
         <a href="/users/create"
            class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl transition shadow text-sm">
             + Nouvel utilisateur
@@ -20,7 +20,7 @@
 <?php if (empty($users)): ?>
     <div class="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center text-gray-400">
         Aucun utilisateur enregistré.
-        <?php if ($auth->is(\Core\Auth\Role::ADMIN)): ?>
+        <?php if ($auth->is(\Core\Auth\Role::Admin)): ?>
             <a href="/users/create" class="text-indigo-500 hover:underline ml-1">Créer le premier</a>.
         <?php endif ?>
     </div>

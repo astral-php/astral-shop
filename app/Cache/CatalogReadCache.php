@@ -14,6 +14,8 @@ use App\Models\Product;
  * Pas de fiche produit (stock affiché) ni panier / checkout.
  *
  * Invalidation : bump de version (clés anciennes expirent via TTL).
+ *
+ * Core 2.1 Cache refuse les objets sérialisés → stockage en tableaux associatifs.
  */
 final class CatalogReadCache
 {
@@ -31,8 +33,17 @@ final class CatalogReadCache
     {
         $key = $this->key('featured.' . max(1, $limit));
 
-        /** @var list<Product> */
-        return $this->store->remember($key, $this->ttl, fn (): array => $this->productDao->findActive(null, $limit));
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->store->remember(
+            $key,
+            $this->ttl,
+            fn (): array => array_map(
+                $this->productToArray(...),
+                $this->productDao->findActive(null, $limit),
+            ),
+        );
+
+        return array_map($this->productFromArray(...), $rows);
     }
 
     /** @return list<Product> */
@@ -41,12 +52,17 @@ final class CatalogReadCache
         $suffix = $categoryId === null ? 'all' : 'cat.' . $categoryId;
         $key = $this->key('products.' . $suffix);
 
-        /** @var list<Product> */
-        return $this->store->remember(
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->store->remember(
             $key,
             $this->ttl,
-            fn (): array => $this->productDao->findActive($categoryId),
+            fn (): array => array_map(
+                $this->productToArray(...),
+                $this->productDao->findActive($categoryId),
+            ),
         );
+
+        return array_map($this->productFromArray(...), $rows);
     }
 
     /** @return list<Category> */
@@ -54,12 +70,17 @@ final class CatalogReadCache
     {
         $key = $this->key('categories');
 
-        /** @var list<Category> */
-        return $this->store->remember(
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $this->store->remember(
             $key,
             $this->ttl,
-            fn (): array => $this->categoryDao->findActiveOrdered(),
+            fn (): array => array_map(
+                $this->categoryToArray(...),
+                $this->categoryDao->findActiveOrdered(),
+            ),
         );
+
+        return array_map($this->categoryFromArray(...), $rows);
     }
 
     /** Invalide les lectures catalogue (admin produit / catégorie). */
@@ -74,5 +95,43 @@ final class CatalogReadCache
         $version = (int) $this->store->get(self::VERSION_KEY, 0);
 
         return 'catalog.v' . $version . '.' . $suffix;
+    }
+
+    /** @return array<string, mixed> */
+    private function productToArray(Product $product): array
+    {
+        return get_object_vars($product);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function productFromArray(array $row): Product
+    {
+        $product = new Product();
+        foreach ($row as $key => $value) {
+            if (property_exists($product, $key)) {
+                $product->{$key} = $value;
+            }
+        }
+
+        return $product;
+    }
+
+    /** @return array<string, mixed> */
+    private function categoryToArray(Category $category): array
+    {
+        return get_object_vars($category);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function categoryFromArray(array $row): Category
+    {
+        $category = new Category();
+        foreach ($row as $key => $value) {
+            if (property_exists($category, $key)) {
+                $category->{$key} = $value;
+            }
+        }
+
+        return $category;
     }
 }

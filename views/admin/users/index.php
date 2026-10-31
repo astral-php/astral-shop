@@ -60,10 +60,10 @@ $filters = [
             <?php foreach ($users as $user): ?>
                 <?php
                 $isSelf = $user->id === $auth->id();
-                $isLastAdmin = $user->role === \Core\Auth\Role::ADMIN && $adminCount <= 1;
+                $isLastAdmin = $user->role === \Core\Auth\Role::Admin->value && $adminCount <= 1;
                 $isDisabled = $isSelf || $isLastAdmin;
-                $typeLabel = $user->role === \Core\Auth\Role::ADMIN ? 'Gestionnaire' : 'Client';
-                $badgeClass = $user->role === \Core\Auth\Role::ADMIN
+                $typeLabel = $user->role === \Core\Auth\Role::Admin->value ? 'Gestionnaire' : 'Client';
+                $badgeClass = $user->role === \Core\Auth\Role::Admin->value
                     ? 'bg-amber-100 text-amber-800 border border-amber-200'
                     : 'bg-slate-100 text-slate-600 border border-slate-200';
                 ?>

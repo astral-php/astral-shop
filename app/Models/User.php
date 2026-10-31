@@ -19,7 +19,7 @@ class User
     public string  $name       = '';
     public string  $email      = '';
     public string  $password   = '';
-    public string  $role       = Role::USER;
+    public string  $role       = Role::User->value;
     public string  $created_at = '';
 
     // Confirmation d'e-mail
@@ -58,12 +58,12 @@ class User
 
     public function isAdmin(): bool
     {
-        return $this->role === Role::ADMIN;
+        return $this->role === Role::Admin->value;
     }
 
     public function isUser(): bool
     {
-        return $this->role === Role::USER;
+        return $this->role === Role::User->value;
     }
 
     public function hasRole(string ...$roles): bool

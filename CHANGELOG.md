@@ -5,6 +5,24 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
+## [2.0.0] — 2026-10-31
+
+### Breaking
+
+- PHP minimum : **`^8.3`**
+- `astral-php/astral-core` **^2.1**
+- `Role::ADMIN` / `USER` / `GUEST` → enum `Role::Admin` / `User` / `Guest`
+- Deps commerce : payment **^0.1.4**, paypal **^0.1.1**, shipping **^0.5.4**, worker **^0.1.1** (core `^1.2 || ^2.1`)
+
+### Modifié
+
+- `CatalogReadCache` : payloads **tableaux** (Core\Cache 2.1 refuse les objets sérialisés)
+
+### Notes
+
+- Feuille 2.1 **P5**. UI **nova-indigo** inchangée.
+- Guide : [`UPGRADE-2.0.md`](./UPGRADE-2.0.md)
+
 ## [1.5.0] — 2026-10-27
 
 ### Ajouté

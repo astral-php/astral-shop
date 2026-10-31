@@ -56,7 +56,7 @@
         </dl>
 
         <!-- Actions admin uniquement -->
-        <?php if ($auth->is(\Core\Auth\Role::ADMIN) && $user->id !== $auth->id()): ?>
+        <?php if ($auth->is(\Core\Auth\Role::Admin) && $user->id !== $auth->id()): ?>
             <form method="POST" action="/users/<?= $user->id ?>/delete" class="mt-8 text-right"
                   onsubmit="return confirm('Supprimer définitivement cet utilisateur ?')">
                 <?= $csrf->field() ?>

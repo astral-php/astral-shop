@@ -165,7 +165,7 @@ final class AuthController extends AbstractController
                 name:          (string) ($post['name'] ?? ''),
                 email:         (string) ($post['email'] ?? ''),
                 plainPassword: (string) ($post['password'] ?? ''),
-                role:          \Core\Auth\Role::USER,
+                role:          \Core\Auth\Role::User,
             );
 
             $user = $this->userDao->findById($userId);

@@ -4,24 +4,24 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "863d2ffce99989994b241927c5e38fee",
+    "content-hash": "a436ec122fef1e3fe075fd9374634bda",
     "packages": [
         {
             "name": "astral-php/astral-core",
-            "version": "1.2.4",
+            "version": "2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-core.git",
-                "reference": "016a7a258f106780293e708219821df0625ab87b"
+                "reference": "9f428722efb2c51ee018d769c54b5975317c377d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-core/zipball/016a7a258f106780293e708219821df0625ab87b",
-                "reference": "016a7a258f106780293e708219821df0625ab87b",
+                "url": "https://api.github.com/repos/astral-php/astral-core/zipball/9f428722efb2c51ee018d769c54b5975317c377d",
+                "reference": "9f428722efb2c51ee018d769c54b5975317c377d",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.1",
+                "php": "^8.3",
                 "phpmailer/phpmailer": "^7.0",
                 "vlucas/phpdotenv": "^5.6"
             },
@@ -43,7 +43,7 @@
             "license": [
                 "MIT"
             ],
-            "description": "Astral Core — moteur PHP 8.1+ (HTTP, DI, router, auth, DAO, vues, CLI) pour les applications et composants Astral",
+            "description": "Astral Core — moteur PHP 8.3+ (HTTP, DI, router, auth, DAO, vues, CLI) pour les applications et composants Astral",
             "homepage": "https://github.com/astral-php/astral-core",
             "keywords": [
                 "astral",
@@ -57,26 +57,26 @@
             ],
             "support": {
                 "issues": "https://github.com/astral-php/astral-core/issues",
-                "source": "https://github.com/astral-php/astral-core/tree/1.2.4"
+                "source": "https://github.com/astral-php/astral-core/tree/2.1.0"
             },
-            "time": "2026-10-08T14:20:28+00:00"
+            "time": "2026-10-30T15:53:26+00:00"
         },
         {
             "name": "astral-php/astral-payment",
-            "version": "0.1.3",
+            "version": "0.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-payment.git",
-                "reference": "545484b100cb8c34a894b9c7bc32a7f0941a0b28"
+                "reference": "7b632ed2a07a3a5d263c55874abe384c198a4414"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-payment/zipball/545484b100cb8c34a894b9c7bc32a7f0941a0b28",
-                "reference": "545484b100cb8c34a894b9c7bc32a7f0941a0b28",
+                "url": "https://api.github.com/repos/astral-php/astral-payment/zipball/7b632ed2a07a3a5d263c55874abe384c198a4414",
+                "reference": "7b632ed2a07a3a5d263c55874abe384c198a4414",
                 "shasum": ""
             },
             "require": {
-                "astral-php/astral-core": "^1.2",
+                "astral-php/astral-core": "^1.2 || ^2.1",
                 "php": "^8.1",
                 "stripe/stripe-php": "^13.0 || ^14.0 || ^15.0 || ^16.0"
             },
@@ -94,7 +94,16 @@
                     "AstralPayment\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "AstralPayment\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -114,27 +123,27 @@
                 "webhook"
             ],
             "support": {
-                "issues": "https://github.com/astral-php/astral-payment/issues",
-                "source": "https://github.com/astral-php/astral-payment"
+                "source": "https://github.com/astral-php/astral-payment",
+                "issues": "https://github.com/astral-php/astral-payment/issues"
             },
-            "time": "2026-10-15T13:58:46+00:00"
+            "time": "2026-10-31T05:48:09+00:00"
         },
         {
             "name": "astral-php/astral-paypal",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-paypal.git",
-                "reference": "fec08b7195aa83a93a912db223411b0b742958d1"
+                "reference": "9bdc606d1fcdf060ff800d0e375c65f1d7903165"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-paypal/zipball/fec08b7195aa83a93a912db223411b0b742958d1",
-                "reference": "fec08b7195aa83a93a912db223411b0b742958d1",
+                "url": "https://api.github.com/repos/astral-php/astral-paypal/zipball/9bdc606d1fcdf060ff800d0e375c65f1d7903165",
+                "reference": "9bdc606d1fcdf060ff800d0e375c65f1d7903165",
                 "shasum": ""
             },
             "require": {
-                "astral-php/astral-core": "^1.2",
+                "astral-php/astral-core": "^1.2 || ^2.1",
                 "ext-curl": "*",
                 "ext-json": "*",
                 "php": "^8.1"
@@ -153,7 +162,16 @@
                     "AstralPaypal\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "AstralPaypal\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -174,27 +192,27 @@
                 "webhook"
             ],
             "support": {
-                "issues": "https://github.com/astral-php/astral-paypal/issues",
-                "source": "https://github.com/astral-php/astral-paypal"
+                "source": "https://github.com/astral-php/astral-paypal",
+                "issues": "https://github.com/astral-php/astral-paypal/issues"
             },
-            "time": "2026-10-23T15:37:37+00:00"
+            "time": "2026-10-31T05:48:16+00:00"
         },
         {
             "name": "astral-php/astral-shipping",
-            "version": "0.5.3",
+            "version": "0.5.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-shipping.git",
-                "reference": "de4616eaabf05968bb9a8846cb0d25d23e5422ff"
+                "reference": "dcf5d37e01b3ea832502500f982209d44347b87c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-shipping/zipball/de4616eaabf05968bb9a8846cb0d25d23e5422ff",
-                "reference": "de4616eaabf05968bb9a8846cb0d25d23e5422ff",
+                "url": "https://api.github.com/repos/astral-php/astral-shipping/zipball/dcf5d37e01b3ea832502500f982209d44347b87c",
+                "reference": "dcf5d37e01b3ea832502500f982209d44347b87c",
                 "shasum": ""
             },
             "require": {
-                "astral-php/astral-core": "^1.2",
+                "astral-php/astral-core": "^1.2 || ^2.1",
                 "php": "^8.1"
             },
             "require-dev": {
@@ -215,7 +233,16 @@
                     "AstralShipping\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "AstralShipping\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -237,10 +264,10 @@
                 "shipping"
             ],
             "support": {
-                "issues": "https://github.com/astral-php/astral-shipping/issues",
-                "source": "https://github.com/astral-php/astral-shipping"
+                "source": "https://github.com/astral-php/astral-shipping",
+                "issues": "https://github.com/astral-php/astral-shipping/issues"
             },
-            "time": "2026-10-23T12:27:41+00:00"
+            "time": "2026-10-31T05:48:21+00:00"
         },
         {
             "name": "astral-php/astral-template",
@@ -289,20 +316,20 @@
         },
         {
             "name": "astral-php/astral-worker",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/astral-php/astral-worker.git",
-                "reference": "99e2b743662421ab14887be068204ddc4ff343db"
+                "reference": "2cc28ad6c28a8159c61fbde3cfead89f5d272bbf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/astral-php/astral-worker/zipball/99e2b743662421ab14887be068204ddc4ff343db",
-                "reference": "99e2b743662421ab14887be068204ddc4ff343db",
+                "url": "https://api.github.com/repos/astral-php/astral-worker/zipball/2cc28ad6c28a8159c61fbde3cfead89f5d272bbf",
+                "reference": "2cc28ad6c28a8159c61fbde3cfead89f5d272bbf",
                 "shasum": ""
             },
             "require": {
-                "astral-php/astral-core": "^1.2",
+                "astral-php/astral-core": "^1.2 || ^2.1",
                 "ext-json": "*",
                 "ext-pdo": "*",
                 "php": "^8.1"
@@ -327,7 +354,16 @@
                     "Astral\\Worker\\": "src/Astral/Worker/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "Astral\\Worker\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -348,10 +384,10 @@
                 "worker"
             ],
             "support": {
-                "issues": "https://github.com/astral-php/astral-worker/issues",
-                "source": "https://github.com/astral-php/astral-worker"
+                "source": "https://github.com/astral-php/astral-worker",
+                "issues": "https://github.com/astral-php/astral-worker/issues"
             },
-            "time": "2026-10-25T08:45:58+00:00"
+            "time": "2026-10-31T05:48:27+00:00"
         },
         {
             "name": "dompdf/dompdf",
@@ -874,16 +910,16 @@
         },
         {
             "name": "stripe/stripe-php",
-            "version": "v16.6.0",
+            "version": "v16.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stripe/stripe-php.git",
-                "reference": "d6de0a536f00b5c5c74f36b8f4d0d93b035499ff"
+                "reference": "9698f0d5c3f0deb7ce6284076fe3d368837b424c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/d6de0a536f00b5c5c74f36b8f4d0d93b035499ff",
-                "reference": "d6de0a536f00b5c5c74f36b8f4d0d93b035499ff",
+                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/9698f0d5c3f0deb7ce6284076fe3d368837b424c",
+                "reference": "9698f0d5c3f0deb7ce6284076fe3d368837b424c",
                 "shasum": ""
             },
             "require": {
@@ -927,9 +963,9 @@
             ],
             "support": {
                 "issues": "https://github.com/stripe/stripe-php/issues",
-                "source": "https://github.com/stripe/stripe-php/tree/v16.6.0"
+                "source": "https://github.com/stripe/stripe-php/tree/v16.6.1"
             },
-            "time": "2025-02-24T22:35:29+00:00"
+            "time": "2026-10-27T19:45:02+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",
@@ -1016,16 +1052,16 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.43.0",
+            "version": "v1.43.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "4d5d331bf731e0aedbc6b2f5e61135b7b7996a72"
+                "reference": "122889ed24dc000165bcbfd77ec412f15cbdfc6a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/4d5d331bf731e0aedbc6b2f5e61135b7b7996a72",
-                "reference": "4d5d331bf731e0aedbc6b2f5e61135b7b7996a72",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/122889ed24dc000165bcbfd77ec412f15cbdfc6a",
+                "reference": "122889ed24dc000165bcbfd77ec412f15cbdfc6a",
                 "shasum": ""
             },
             "require": {
@@ -1077,7 +1113,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.43.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.43.3"
             },
             "funding": [
                 {
@@ -1097,7 +1133,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-24T15:19:04+00:00"
+            "time": "2026-10-28T09:35:49+00:00"
         },
         {
             "name": "symfony/polyfill-php80",
@@ -1185,16 +1221,16 @@
         },
         {
             "name": "vlucas/phpdotenv",
-            "version": "v5.7.0",
+            "version": "v5.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpdotenv/phpdotenv.git",
-                "reference": "301c07936b16d88628b126b01d082ba153cf4c40"
+                "reference": "96149103e62ac67e915f6d2ef59b72dee2e011e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpdotenv/phpdotenv/zipball/301c07936b16d88628b126b01d082ba153cf4c40",
-                "reference": "301c07936b16d88628b126b01d082ba153cf4c40",
+                "url": "https://api.github.com/repos/phpdotenv/phpdotenv/zipball/96149103e62ac67e915f6d2ef59b72dee2e011e0",
+                "reference": "96149103e62ac67e915f6d2ef59b72dee2e011e0",
                 "shasum": ""
             },
             "require": {
@@ -1221,7 +1257,7 @@
                     "forward-command": false
                 },
                 "branch-alias": {
-                    "dev-master": "5.6-dev"
+                    "dev-master": "5.8-dev"
                 }
             },
             "autoload": {
@@ -1252,8 +1288,8 @@
                 "environment"
             ],
             "support": {
-                "issues": "https://github.com/vlucas/phpdotenv/issues",
-                "source": "https://github.com/vlucas/phpdotenv/tree/v5.7.0"
+                "issues": "https://github.com/phpdotenv/phpdotenv/issues",
+                "source": "https://github.com/phpdotenv/phpdotenv/tree/v5.8.0"
             },
             "funding": [
                 {
@@ -1265,7 +1301,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-24T18:07:49+00:00"
+            "time": "2026-10-25T16:26:19+00:00"
         }
     ],
     "packages-dev": [
@@ -2928,7 +2964,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.1"
+        "php": "^8.3"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

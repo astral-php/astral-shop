@@ -73,7 +73,7 @@ final class InstallController extends AbstractController
                 name:          (string) ($post['name'] ?? ''),
                 email:         (string) ($post['email'] ?? ''),
                 plainPassword: (string) ($post['password'] ?? ''),
-                role:          Role::ADMIN,
+                role:          Role::Admin,
             );
 
             // Install = e-mail déjà maîtrisé ; éviter le blocage login en mode confirm.

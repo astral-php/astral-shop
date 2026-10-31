@@ -44,7 +44,7 @@ $src    = $product->imageSrc();
             <?php endif ?>
         </p>
 
-        <?php $isAdmin = $auth->check() && $auth->is(\Core\Auth\Role::ADMIN); ?>
+        <?php $isAdmin = $auth->check() && $auth->is(\Core\Auth\Role::Admin); ?>
         <?php if (!$isAdmin): ?>
             <?php if ($product->inStock()): ?>
                 <form method="POST" action="/panier/ajouter" class="form-stack" style="max-width:16rem;margin-bottom:1.25rem">

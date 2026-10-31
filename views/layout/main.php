@@ -8,7 +8,7 @@
     $shop = $shop ?? [];
     $storeName = (string) ($shop['store_name'] ?? 'Astral Shop');
     $primary   = (string) ($shop['primary'] ?? '#4f46e5');
-    $isAdmin   = $auth->check() && $auth->is(\Core\Auth\Role::ADMIN);
+    $isAdmin   = $auth->check() && $auth->is(\Core\Auth\Role::Admin);
     $cartBump  = $session->hasFlash('cart_bump');
     if ($cartBump) {
         $session->getFlash('cart_bump');

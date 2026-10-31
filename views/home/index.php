@@ -15,7 +15,7 @@ $store = (string) ($shop['store_name'] ?? 'Astral Shop');
             <a class="btn btn-primary" href="/boutique">Explorer la boutique</a>
             <?php if (!$auth->check()): ?>
                 <a class="btn btn-ghost" href="/login">Connexion</a>
-            <?php elseif ($auth->is(\Core\Auth\Role::ADMIN)): ?>
+            <?php elseif ($auth->is(\Core\Auth\Role::Admin)): ?>
                 <a class="btn btn-ghost" href="/admin/orders">Espace admin</a>
             <?php else: ?>
                 <a class="btn btn-ghost" href="/orders">Mes commandes</a>

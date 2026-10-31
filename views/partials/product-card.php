@@ -29,7 +29,7 @@ $redirect = $redirect ?? '/boutique';
             </span>
         </div>
     </a>
-    <?php if (!$auth->check() || !$auth->is(\Core\Auth\Role::ADMIN)): ?>
+    <?php if (!$auth->check() || !$auth->is(\Core\Auth\Role::Admin)): ?>
     <div class="product-card__actions">
         <?php if ($product->inStock()): ?>
             <form method="POST" action="/panier/ajouter">

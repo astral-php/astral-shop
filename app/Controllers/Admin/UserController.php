@@ -39,7 +39,7 @@ final class UserController extends AdminController
     public function index(): Response
     {
         $filter = trim((string) $this->request->query('role', ''));
-        if ($filter !== '' && !in_array($filter, [Role::ADMIN, Role::USER], true)) {
+        if ($filter !== '' && !in_array($filter, [Role::Admin->value, Role::User->value], true)) {
             $filter = '';
         }
 
@@ -47,8 +47,8 @@ final class UserController extends AdminController
             ? $this->userDao->findByRole($filter)
             : $this->userDao->findAll('id', 'DESC');
 
-        $adminCount = count($this->userDao->findByRole(Role::ADMIN));
-        $clientCount = count($this->userDao->findByRole(Role::USER));
+        $adminCount = count($this->userDao->findByRole(Role::Admin));
+        $clientCount = count($this->userDao->findByRole(Role::User));
 
         return $this->render('admin/users/index', [
             'title'       => 'Comptes',
@@ -65,7 +65,7 @@ final class UserController extends AdminController
         return $this->render('admin/users/form', [
             'title'  => 'Nouveau compte',
             'errors' => [],
-            'old'    => ['role' => Role::ADMIN],
+            'old'    => ['role' => Role::Admin->value],
         ]);
     }
 
@@ -88,9 +88,9 @@ final class UserController extends AdminController
             ]);
         }
 
-        $role = (string) ($post['role'] ?? Role::USER);
-        if (!in_array($role, [Role::ADMIN, Role::USER], true)) {
-            $role = Role::USER;
+        $role = (string) ($post['role'] ?? Role::User->value);
+        if (!in_array($role, [Role::Admin->value, Role::User->value], true)) {
+            $role = Role::User->value;
         }
 
         $name  = (string) ($post['name'] ?? '');
@@ -111,7 +111,7 @@ final class UserController extends AdminController
             ]);
         }
 
-        $label = $role === Role::ADMIN ? 'gestionnaire' : 'client';
+        $label = $role === Role::Admin->value ? 'gestionnaire' : 'client';
 
         // Même règle que /register : en mode confirm, le compte doit valider son e-mail.
         if ($this->registrationMode === 'confirm') {
@@ -164,7 +164,7 @@ final class UserController extends AdminController
             return $this->redirect($back);
         }
 
-        if (!Role::isValid($newRole) || $newRole === Role::GUEST) {
+        if (!Role::isValid($newRole) || $newRole === Role::Guest->value) {
             $this->session->flash('error', "Rôle invalide : « {$newRole} ».");
             return $this->redirect($back);
         }
@@ -174,8 +174,8 @@ final class UserController extends AdminController
             throw new NotFoundException("Utilisateur #{$userId} introuvable.");
         }
 
-        if ($user->role === Role::ADMIN && $newRole !== Role::ADMIN) {
-            $adminCount = count($this->userDao->findByRole(Role::ADMIN));
+        if ($user->role === Role::Admin->value && $newRole !== Role::Admin->value) {
+            $adminCount = count($this->userDao->findByRole(Role::Admin));
             if ($adminCount <= 1) {
                 $this->session->flash(
                     'error',
@@ -195,7 +195,7 @@ final class UserController extends AdminController
             changedBy: (int) $this->auth->id(),
         ));
 
-        $label = $newRole === Role::ADMIN ? 'Gestionnaire' : 'Client';
+        $label = $newRole === Role::Admin->value ? 'Gestionnaire' : 'Client';
         $this->session->flash('success', "{$user->name} est maintenant « {$label} ».");
 
         return $this->redirect($back);
@@ -204,7 +204,7 @@ final class UserController extends AdminController
     private function filterRedirect(): string
     {
         $role = trim((string) $this->request->input('filter_role', ''));
-        if (in_array($role, [Role::ADMIN, Role::USER], true)) {
+        if (in_array($role, [Role::Admin->value, Role::User->value], true)) {
             return '/admin/users?role=' . rawurlencode($role);
         }
 

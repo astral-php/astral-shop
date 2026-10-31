@@ -2,8 +2,8 @@
 
 Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php) — catalogue, panier, checkout, Stripe, frais de port, facture PDF, remboursements et retours colis.
 
-[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue)](./CHANGELOG.md)
+[![PHP](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > **Version 1.5.0** — worker (mail/PDF), stock idempotent, cache catalogue, checklist prod.  
@@ -50,7 +50,7 @@ Détail et checklist : [`docs/Installation/ouvrir-une-boutique-fr.md`](./docs/In
 
 ## Prérequis
 
-- PHP ^8.1, Composer 2  
+- PHP ^8.3, Composer 2 · `astral-core` ^2.1 
 - SQLite (défaut) ou MySQL  
 - Mailpit (ou SMTP) pour les e-mails  
 - Compte Stripe test + CLI (`stripe listen`) pour la carte  
@@ -81,12 +81,12 @@ Widgets relais officiels : doc package `astral-shipping` → `docs/widgets-picku
 ## Dépendances Astral (Packagist)
 
 ```json
-"astral-php/astral-core": "^1.2",
-"astral-php/astral-payment": "^0.1.3",
-"astral-php/astral-paypal": "^0.1",
-"astral-php/astral-shipping": "^0.5.3",
+"astral-php/astral-core": "^2.1",
+"astral-php/astral-payment": "^0.1.4",
+"astral-php/astral-paypal": "^0.1.1",
+"astral-php/astral-shipping": "^0.5.4",
 "astral-php/astral-template": "^0.1",
-"astral-php/astral-worker": "^0.1"
+"astral-php/astral-worker": "^0.1.1"
 ```
 
 ## Configuration utile

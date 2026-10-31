@@ -91,7 +91,7 @@ final class OrderController extends AbstractController
         }
 
         // Admin qui consulte une commande tierce ne dépose pas une « demande client ».
-        if ($this->auth->is(Role::ADMIN) && (int) $order->user_id !== (int) $this->auth->id()) {
+        if ($this->auth->is(Role::Admin) && (int) $order->user_id !== (int) $this->auth->id()) {
             $this->session->flash('error', 'Utilisez l’admin pour traiter un remboursement.');
             return $this->redirect('/admin/orders/' . $order->id);
         }
@@ -192,7 +192,7 @@ final class OrderController extends AbstractController
             return null;
         }
 
-        if ($this->auth->is(Role::ADMIN)) {
+        if ($this->auth->is(Role::Admin)) {
             /** @var Order|null */
             return $this->orderDao->findById($orderId);
         }
