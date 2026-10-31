@@ -5,6 +5,12 @@ Toutes les versions notables de ce projet seront documentées ici.
 Le format s’inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 et ce projet adhère au [Versionnage Sémantique](https://semver.org/lang/fr/).
 
+## [2.0.1] — 2026-10-31
+
+### Modifié
+
+- Deps P7 : payment **^0.2**, paypal **^0.2**, shipping **^0.6**, worker **^0.2**, template **^0.2**
+
 ## [2.0.0] — 2026-10-31
 
 ### Breaking

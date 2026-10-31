@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 return [
     'name'     => $_ENV['APP_NAME']     ?? 'Astral Shop',
-    'version'  => $_ENV['APP_VERSION']  ?? '2.0.0',
+    'version'  => $_ENV['APP_VERSION']  ?? '2.0.1',
     'env'      => $_ENV['APP_ENV']      ?? 'production',
     'debug'    => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
     'timezone' => $_ENV['APP_TIMEZONE'] ?? 'UTC',

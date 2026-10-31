@@ -3,7 +3,7 @@
 Boutique e-commerce pour l’écosystème [Astral](https://github.com/astral-php) — catalogue, panier, checkout, Stripe, frais de port, facture PDF, remboursements et retours colis.
 
 [![PHP](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://www.php.net)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue)](./CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > **Version 1.5.0** — worker (mail/PDF), stock idempotent, cache catalogue, checklist prod.  
@@ -82,11 +82,11 @@ Widgets relais officiels : doc package `astral-shipping` → `docs/widgets-picku
 
 ```json
 "astral-php/astral-core": "^2.1",
-"astral-php/astral-payment": "^0.1.4",
-"astral-php/astral-paypal": "^0.1.1",
-"astral-php/astral-shipping": "^0.5.4",
-"astral-php/astral-template": "^0.1",
-"astral-php/astral-worker": "^0.1.1"
+"astral-php/astral-payment": "^0.2",
+"astral-php/astral-paypal": "^0.2",
+"astral-php/astral-shipping": "^0.6",
+"astral-php/astral-template": "^0.2",
+"astral-php/astral-worker": "^0.2"
 ```
 
 ## Configuration utile
